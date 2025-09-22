@@ -83,6 +83,12 @@
 		console.log('Campaign started');
 	}
 
+	let showCampaignDashboard = true;
+
+	function toggleCampaignDashboard() {
+		showCampaignDashboard = !showCampaignDashboard;
+	}
+
 	onDestroy(async () => {
 		// Save layout before component destruction
 		try {
@@ -109,22 +115,37 @@
 		{#if $gameStore?.currentPhase === 'campaign-intro'}
 			<!-- Campaign introduction overlay -->
 			<CampaignIntro on:start={handleCampaignStart} />
-		{:else if $gameStore?.currentPhase === 'campaign'}
-			<!-- Campaign phase - show campaign dashboard -->
-			<CampaignDashboard />
-		{:else}
-			<!-- Other phases - show desktop environment -->
-			<!-- Windows will be rendered here -->
-			{#each $windowsStore as windowData (windowData.id)}
-				<Window bind:windowData />
-			{/each}
-
-			<!-- Dock at the bottom -->
-			<Dock />
-
-			<!-- Toast notifications -->
-			<Toasts />
 		{/if}
+
+		<!-- Always show desktop environment when game is initialized -->
+		<!-- Windows will be rendered here -->
+		{#each $windowsStore as windowData (windowData.id)}
+			<Window bind:windowData />
+		{/each}
+
+		<!-- Show campaign dashboard as overlay during campaign phase -->
+		{#if $gameStore?.currentPhase === 'campaign' && showCampaignDashboard}
+			<div class="campaign-overlay">
+				<div class="campaign-window">
+					<div class="campaign-header">
+						<span class="campaign-title">Campaign Manager</span>
+						<button class="minimize-btn" on:click={toggleCampaignDashboard} title="Minimize to dock">
+							−
+						</button>
+					</div>
+					<CampaignDashboard />
+				</div>
+			</div>
+		{/if}
+
+		<!-- Dock at the bottom -->
+		<Dock
+			bind:showCampaignDashboard={showCampaignDashboard}
+			currentPhase={$gameStore?.currentPhase}
+		/>
+
+		<!-- Toast notifications -->
+		<Toasts />
 	{:else}
 		<!-- No game initialized - show character creation -->
 		<div class="character-creation-overlay">
@@ -174,5 +195,61 @@
 		justify-content: center;
 		z-index: 2000;
 		overflow: auto;
+	}
+
+	.campaign-overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 1500;
+		padding: 20px;
+		pointer-events: none; /* Allow clicking through to desktop */
+	}
+
+	.campaign-window {
+		width: 100%;
+		height: 100%;
+		background: white;
+		border-radius: 12px;
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+		border: 1px solid #e5e7eb;
+		overflow: hidden;
+		pointer-events: auto; /* Re-enable pointer events for the window */
+	}
+
+	.campaign-header {
+		background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+		color: white;
+		padding: 12px 20px;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.campaign-title {
+		font-weight: 600;
+		font-size: 14px;
+	}
+
+	.minimize-btn {
+		background: rgba(255, 255, 255, 0.2);
+		color: white;
+		border: none;
+		width: 24px;
+		height: 24px;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 18px;
+		line-height: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: background 0.2s;
+	}
+
+	.minimize-btn:hover {
+		background: rgba(255, 255, 255, 0.3);
 	}
 </style>

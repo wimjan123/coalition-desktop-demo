@@ -2,6 +2,9 @@
 	import { createWindow } from '../utils/window-manager.js';
 	import { clearGameState } from '../stores/gameStore.js';
 
+	export let showCampaignDashboard: boolean = true;
+	export let currentPhase: string | undefined = undefined;
+
 	const apps = [
 		{ id: 'mail', name: 'Mail', icon: '📧', appType: 'mail' },
 		{ id: 'chat', name: 'Chat', icon: '💬', appType: 'chat' },
@@ -13,12 +16,19 @@
 		{ id: 'newgame', name: 'New Game', icon: '🎮', appType: 'newgame' }
 	];
 
+	$: campaignApps = currentPhase === 'campaign'
+		? [{ id: 'campaign', name: 'Campaign Manager', icon: '🚀', appType: 'campaign' }, ...apps]
+		: apps;
+
 	function launchApp(app: typeof apps[0]) {
 		if (app.appType === 'newgame') {
 			// Special case: Start new game (clear game state to show character creation)
 			if (confirm('Are you sure you want to start a new game? This will delete your current progress.')) {
 				clearGameState();
 			}
+		} else if (app.appType === 'campaign') {
+			// Special case: Toggle campaign dashboard
+			showCampaignDashboard = true;
 		} else {
 			createWindow({
 				title: app.name,
@@ -34,9 +44,10 @@
 
 <div class="dock" role="toolbar" aria-label="Application dock">
 	<div class="dock-container">
-		{#each apps as app (app.id)}
+		{#each campaignApps as app (app.id)}
 			<button
 				class="dock-item"
+				class:active={app.appType === 'campaign' && showCampaignDashboard}
 				on:click={() => launchApp(app)}
 				aria-label="Launch {app.name}"
 				title={app.name}
@@ -95,6 +106,12 @@
 
 	.dock-item:active {
 		transform: translateY(-2px) scale(1.02);
+	}
+
+	.dock-item.active {
+		background: rgba(255, 255, 255, 0.3);
+		transform: translateY(-4px) scale(1.05);
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 	}
 
 	.dock-icon {

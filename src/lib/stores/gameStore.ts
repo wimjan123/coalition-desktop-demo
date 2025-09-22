@@ -2,6 +2,7 @@ import { writable } from 'svelte/store';
 import type { GameState, PlayerCharacter, Party, CampaignVideo, RegionalCampaignData } from '../types/game.js';
 import { initializePopulation, calculateCampaignImpact, DUTCH_DEMOGRAPHICS } from '../types/population.js';
 import { DUTCH_REGIONS } from '../types/regions.js';
+import { DUTCH_OPPOSITION_PARTIES } from '../types/game.js';
 
 // Game state store
 export const gameStore = writable<GameState | null>(null);
@@ -92,6 +93,9 @@ export function startCampaign() {
 		const experienceBonus = (state.player.experience / 10) * 0.2; // 0-20% bonus based on experience
 		const startingBudget = Math.round(baseBudget * difficultyMultiplier * (1 + experienceBonus));
 
+		// Initialize opposition parties with realistic polling
+		const oppositionPolling = initializeOppositionPolling(state.difficulty);
+
 		return {
 			...state,
 			currentPhase: 'campaign',
@@ -102,7 +106,9 @@ export function startCampaign() {
 			campaignBudget: startingBudget,
 			overallPolling: initialPolling,
 			regionalData,
-			nationalCampaignFocus: 'national' // Start with national focus
+			nationalCampaignFocus: 'national', // Start with national focus
+			oppositionParties: DUTCH_OPPOSITION_PARTIES,
+			oppositionPolling
 		};
 	});
 }
@@ -165,6 +171,41 @@ function calculatePartyLeaning(party: Party): 'left' | 'center' | 'right' {
 	if (averagePosition < -30) return 'left';
 	if (averagePosition > 30) return 'right';
 	return 'center';
+}
+
+// Initialize opposition party polling based on realistic Dutch political landscape
+function initializeOppositionPolling(difficulty: 'easy' | 'normal' | 'hard'): { [partyId: string]: number } {
+	// Base polling percentages based on recent Dutch election results
+	const basePolling = {
+		'vvd': 22.0,    // Historically largest party
+		'pvda': 8.5,    // Smaller after decline
+		'd66': 15.0,    // Strong centrist position
+		'cda': 9.5,     // Traditional Christian democrats
+		'pvv': 13.0,    // Right-wing populist
+		'gl': 11.0,     // Green left coalition
+		'sp': 6.0,      // Socialist party
+		'fvd': 8.0      // Conservative populist
+	};
+
+	const polling: { [partyId: string]: number } = {};
+
+	// Apply difficulty modifier (harder = stronger opposition)
+	const difficultyModifier = difficulty === 'easy' ? 0.85 : difficulty === 'hard' ? 1.15 : 1.0;
+
+	// Calculate total base polling to normalize
+	const totalBase = Object.values(basePolling).reduce((sum, val) => sum + val, 0);
+	const remainingPercentage = 95; // Leave 5% for player and smaller parties
+
+	for (const [partyId, baseValue] of Object.entries(basePolling)) {
+		// Normalize to fit within remaining percentage and apply difficulty
+		const normalizedValue = (baseValue / totalBase) * remainingPercentage * difficultyModifier;
+
+		// Add some controlled randomness (±2%)
+		const randomVariation = (Math.random() - 0.5) * 4;
+		polling[partyId] = Math.max(3, Math.min(35, normalizedValue + randomVariation));
+	}
+
+	return polling;
 }
 
 // Create a campaign video

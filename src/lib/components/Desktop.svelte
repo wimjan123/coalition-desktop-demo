@@ -5,8 +5,9 @@
 	import Window from './Window.svelte';
 	import CharacterCreation from './CharacterCreation.svelte';
 	import CampaignIntro from './CampaignIntro.svelte';
-	import CampaignDashboard from './CampaignDashboard.svelte';
+	import CampaignHeadquarters from './CampaignHeadquarters.svelte';
 	import AdvancedPolling from './AdvancedPolling.svelte';
+	import PartyOverview from './PartyOverview.svelte';
 	import { windowsStore } from '../stores/stores.js';
 	import { isGameInitialized, initializeNewGame, loadGameFromLocal, gameStore, startCampaign } from '../stores/gameStore.js';
 	import { setupKeyboardShortcuts } from '../utils/useKeyboard.js';
@@ -86,6 +87,7 @@
 
 	let showCampaignDashboard = true;
 	let showPollingApp = false;
+	let showPartyOverview = false;
 
 	function toggleCampaignDashboard() {
 		showCampaignDashboard = !showCampaignDashboard;
@@ -93,6 +95,10 @@
 
 	function togglePollingApp() {
 		showPollingApp = !showPollingApp;
+	}
+
+	function togglePartyOverview() {
+		showPartyOverview = !showPartyOverview;
 	}
 
 	onDestroy(async () => {
@@ -134,12 +140,14 @@
 			<div class="campaign-overlay">
 				<div class="campaign-window">
 					<div class="campaign-header">
-						<span class="campaign-title">Campaign Manager</span>
+						<span class="campaign-title">Campaign Headquarters</span>
 						<button class="minimize-btn" on:click={toggleCampaignDashboard} title="Minimize to dock">
 							−
 						</button>
 					</div>
-					<CampaignDashboard />
+					<div class="campaign-content">
+						<CampaignHeadquarters />
+					</div>
 				</div>
 			</div>
 		{/if}
@@ -149,10 +157,16 @@
 			<AdvancedPolling on:close={() => showPollingApp = false} />
 		{/if}
 
+		<!-- Show party overview overlay -->
+		{#if showPartyOverview && $gameStore?.currentPhase === 'campaign'}
+			<PartyOverview on:close={() => showPartyOverview = false} />
+		{/if}
+
 		<!-- Dock at the bottom -->
 		<Dock
 			bind:showCampaignDashboard={showCampaignDashboard}
 			bind:showPollingApp={showPollingApp}
+			bind:showPartyOverview={showPartyOverview}
 			currentPhase={$gameStore?.currentPhase}
 		/>
 
@@ -229,6 +243,8 @@
 		border: 1px solid #e5e7eb;
 		overflow: hidden;
 		pointer-events: auto; /* Re-enable pointer events for the window */
+		display: flex;
+		flex-direction: column;
 	}
 
 	.campaign-header {
@@ -238,6 +254,12 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+	}
+
+	.campaign-content {
+		flex: 1;
+		min-height: 0;
+		overflow: hidden;
 	}
 
 	.campaign-title {

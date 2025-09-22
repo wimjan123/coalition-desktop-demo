@@ -80,6 +80,9 @@ export interface GameState {
 	// Regional campaign data
 	regionalData?: { [regionId: string]: RegionalCampaignData };
 	nationalCampaignFocus?: string; // 'national' | 'regional'
+	// Opposition parties with polling data
+	oppositionParties?: Party[];
+	oppositionPolling?: { [partyId: string]: number }; // 0-100 polling for each party
 }
 
 // Dutch political issues for the game
@@ -173,4 +176,128 @@ export const PERSONALITY_TRAITS = [
 	'charismatic', 'analytical', 'pragmatic', 'idealistic', 'ambitious', 'principled',
 	'diplomatic', 'aggressive', 'patient', 'impulsive', 'cautious', 'bold',
 	'empathetic', 'calculating', 'honest', 'strategic', 'populist', 'elitist'
+];
+
+// Major Dutch political parties for opposition
+export const DUTCH_OPPOSITION_PARTIES: Party[] = [
+	{
+		id: 'vvd',
+		name: 'Volkspartij voor Vrijheid en Democratie',
+		shortName: 'VVD',
+		color: '#0066CC',
+		description: 'Liberal party focused on economic freedom and entrepreneurship',
+		isPlayerParty: false,
+		positions: [
+			{ issueId: 'economy', position: 65, priority: 5 },
+			{ issueId: 'immigration', position: 35, priority: 4 },
+			{ issueId: 'eu', position: 25, priority: 3 },
+			{ issueId: 'healthcare', position: 45, priority: 3 },
+			{ issueId: 'security', position: 55, priority: 4 }
+		]
+	},
+	{
+		id: 'pvda',
+		name: 'Partij van de Arbeid',
+		shortName: 'PvdA',
+		color: '#DC143C',
+		description: 'Social democratic party championing workers\' rights and equality',
+		isPlayerParty: false,
+		positions: [
+			{ issueId: 'economy', position: -55, priority: 5 },
+			{ issueId: 'healthcare', position: -65, priority: 4 },
+			{ issueId: 'education', position: -60, priority: 4 },
+			{ issueId: 'climate', position: -45, priority: 4 },
+			{ issueId: 'housing', position: -70, priority: 5 }
+		]
+	},
+	{
+		id: 'd66',
+		name: 'Democraten 66',
+		shortName: 'D66',
+		color: '#32A4FF',
+		description: 'Progressive liberal party focused on education and democratic reform',
+		isPlayerParty: false,
+		positions: [
+			{ issueId: 'education', position: -40, priority: 5 },
+			{ issueId: 'climate', position: -60, priority: 4 },
+			{ issueId: 'eu', position: -50, priority: 4 },
+			{ issueId: 'economy', position: 20, priority: 3 },
+			{ issueId: 'immigration', position: -30, priority: 3 }
+		]
+	},
+	{
+		id: 'cda',
+		name: 'Christen-Democratisch Appèl',
+		shortName: 'CDA',
+		color: '#FF8C00',
+		description: 'Christian democratic party emphasizing traditional values and social responsibility',
+		isPlayerParty: false,
+		positions: [
+			{ issueId: 'economy', position: 25, priority: 4 },
+			{ issueId: 'immigration', position: 30, priority: 4 },
+			{ issueId: 'healthcare', position: -20, priority: 4 },
+			{ issueId: 'education', position: -10, priority: 3 },
+			{ issueId: 'security', position: 40, priority: 3 }
+		]
+	},
+	{
+		id: 'pvv',
+		name: 'Partij voor de Vrijheid',
+		shortName: 'PVV',
+		color: '#FFD700',
+		description: 'Right-wing populist party focused on immigration restriction and EU criticism',
+		isPlayerParty: false,
+		positions: [
+			{ issueId: 'immigration', position: 85, priority: 5 },
+			{ issueId: 'eu', position: 75, priority: 5 },
+			{ issueId: 'security', position: 70, priority: 4 },
+			{ issueId: 'economy', position: -15, priority: 3 },
+			{ issueId: 'healthcare', position: -25, priority: 3 }
+		]
+	},
+	{
+		id: 'gl',
+		name: 'GroenLinks',
+		shortName: 'GL',
+		color: '#32CD32',
+		description: 'Green left party prioritizing environmental protection and social justice',
+		isPlayerParty: false,
+		positions: [
+			{ issueId: 'climate', position: -85, priority: 5 },
+			{ issueId: 'economy', position: -60, priority: 4 },
+			{ issueId: 'immigration', position: -70, priority: 4 },
+			{ issueId: 'healthcare', position: -75, priority: 4 },
+			{ issueId: 'housing', position: -80, priority: 5 }
+		]
+	},
+	{
+		id: 'sp',
+		name: 'Socialistische Partij',
+		shortName: 'SP',
+		color: '#FF6347',
+		description: 'Socialist party advocating for working class interests and wealth redistribution',
+		isPlayerParty: false,
+		positions: [
+			{ issueId: 'economy', position: -80, priority: 5 },
+			{ issueId: 'healthcare', position: -85, priority: 5 },
+			{ issueId: 'housing', position: -85, priority: 5 },
+			{ issueId: 'eu', position: 45, priority: 4 },
+			{ issueId: 'education', position: -70, priority: 4 }
+		]
+	},
+	{
+		id: 'fvd',
+		name: 'Forum voor Democratie',
+		shortName: 'FvD',
+		color: '#8B4513',
+		description: 'Conservative populist party emphasizing national sovereignty and traditional values',
+		isPlayerParty: false,
+		positions: [
+			{ issueId: 'eu', position: 80, priority: 5 },
+			{ issueId: 'immigration', position: 70, priority: 4 },
+			{ issueId: 'climate', position: 60, priority: 4 },
+			{ issueId: 'security', position: 65, priority: 4 },
+			{ issueId: 'economy', position: 40, priority: 3 }
+		]
+	}
 ];

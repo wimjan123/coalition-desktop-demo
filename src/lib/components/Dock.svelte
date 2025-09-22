@@ -4,12 +4,14 @@
 
 	export let showCampaignDashboard: boolean = true;
 	export let showPollingApp: boolean = false;
+	export let showPartyOverview: boolean = false;
 	export let currentPhase: string | undefined = undefined;
 
 	const apps = [
 		{ id: 'mail', name: 'Mail', icon: '📧', appType: 'mail' },
 		{ id: 'chat', name: 'Chat', icon: '💬', appType: 'chat' },
 		{ id: 'polling', name: 'Polling', icon: '📊', appType: 'polling' },
+		{ id: 'party', name: 'Party Stats', icon: '📈', appType: 'party' },
 		{ id: 'calendar', name: 'Calendar', icon: '📅', appType: 'calendar' },
 		{ id: 'cabinet', name: 'Cabinet', icon: '🗄️', appType: 'cabinet' },
 		{ id: 'policy', name: 'Policy', icon: '📋', appType: 'policy' },
@@ -33,6 +35,9 @@
 		} else if (app.appType === 'polling') {
 			// Special case: Toggle polling app
 			showPollingApp = true;
+		} else if (app.appType === 'party') {
+			// Special case: Toggle party overview
+			showPartyOverview = true;
 		} else {
 			// Position windows in a predictable cascade pattern
 			const windowCount = document.querySelectorAll('.window').length;
@@ -57,7 +62,7 @@
 		{#each campaignApps as app (app.id)}
 			<button
 				class="dock-item"
-				class:active={(app.appType === 'campaign' && showCampaignDashboard) || (app.appType === 'polling' && showPollingApp)}
+				class:active={(app.appType === 'campaign' && showCampaignDashboard) || (app.appType === 'polling' && showPollingApp) || (app.appType === 'party' && showPartyOverview)}
 				on:click={() => launchApp(app)}
 				aria-label="Launch {app.name}"
 				title={app.name}

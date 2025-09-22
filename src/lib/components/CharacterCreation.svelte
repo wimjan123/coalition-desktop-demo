@@ -2,6 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import type { PlayerCharacter, Party, PoliticalPosition } from '../types/game.js';
 	import { CHARACTER_BACKGROUNDS, DUTCH_ISSUES, PERSONALITY_TRAITS } from '../types/game.js';
+	import MediaInterview from './MediaInterview.svelte';
 
 	const dispatch = createEventDispatcher<{
 		complete: { player: PlayerCharacter; party: Party };
@@ -89,6 +90,11 @@
 		positions = positions.map(p =>
 			p.issueId === issueId ? { ...p, priority } : p
 		);
+	}
+
+	function handleInterviewComplete(event: CustomEvent<{ positions: PoliticalPosition[] }>) {
+		positions = event.detail.positions;
+		completeCreation();
 	}
 
 	function nextStep() {
@@ -336,63 +342,18 @@
 			</div>
 
 		{:else if currentStep === 4}
-			<!-- Step 4: Political Positions -->
+			<!-- Step 4: Media Interview for Political Positions -->
 			<div class="step">
-				<h2>Define Your Political Platform</h2>
-				<p class="instruction">Set your party's position on key Dutch political issues</p>
+				<h2>Live Political Interview</h2>
+				<p class="instruction">Your responses will establish your party's political platform</p>
 
-				<div class="issues-list">
-					{#each DUTCH_ISSUES as issue}
-						{@const position = positions.find(p => p.issueId === issue.id)}
-						<div class="issue-card">
-							<div class="issue-header">
-								<h3>{issue.name}</h3>
-								<span
-									class="position-label"
-									style="color: {getPositionColor(position?.position || 0)}"
-								>
-									{getPositionLabel(position?.position || 0)}
-								</span>
-							</div>
-							<p>{issue.description}</p>
-
-							<div class="position-control">
-								<div class="spectrum-labels">
-									<span class="left-label">{issue.spectrum.left}</span>
-									<span class="right-label">{issue.spectrum.right}</span>
-								</div>
-								<input
-									type="range"
-									min="-100"
-									max="100"
-									value={position?.position || 0}
-									on:input={(e) => updatePosition(issue.id, parseInt(e.target.value))}
-									class="position-slider"
-								/>
-							</div>
-
-							<div class="priority-control">
-								<label>Priority Level:</label>
-								<div class="priority-buttons">
-									{#each [1, 2, 3, 4, 5] as level}
-										<button
-											class="priority-btn"
-											class:selected={position?.priority === level}
-											on:click={() => updatePriority(issue.id, level)}
-										>
-											{level}
-										</button>
-									{/each}
-								</div>
-							</div>
-						</div>
-					{/each}
-				</div>
+				<MediaInterview on:complete={handleInterviewComplete} />
 			</div>
 		{/if}
 	</div>
 
-	<!-- Desktop-style navigation footer -->
+	<!-- Desktop-style navigation footer (hidden during interview) -->
+	{#if currentStep !== 4}
 	<div class="navigation-footer">
 		<div class="nav-left">
 			{#if currentStep > 1}
@@ -422,6 +383,7 @@
 			{/if}
 		</div>
 	</div>
+	{/if}
 </div>
 
 <style>
@@ -763,121 +725,6 @@
 		color: #6b7280;
 	}
 
-	.issues-list {
-		space-y: 20px;
-	}
-
-	.issue-card {
-		background: white;
-		border: 1px solid #e5e7eb;
-		border-radius: 12px;
-		padding: 20px;
-		margin-bottom: 20px;
-	}
-
-	.issue-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 10px;
-	}
-
-	.issue-header h3 {
-		margin: 0;
-		color: #1f2937;
-		font-size: 1.1rem;
-	}
-
-	.position-label {
-		font-weight: 600;
-		font-size: 0.9rem;
-	}
-
-	.issue-card p {
-		color: #6b7280;
-		margin: 0 0 15px 0;
-		line-height: 1.5;
-	}
-
-	.position-control {
-		margin-bottom: 15px;
-	}
-
-	.spectrum-labels {
-		display: flex;
-		justify-content: space-between;
-		margin-bottom: 10px;
-		font-size: 0.85rem;
-		color: #6b7280;
-	}
-
-	.left-label {
-		text-align: left;
-		max-width: 40%;
-	}
-
-	.right-label {
-		text-align: right;
-		max-width: 40%;
-	}
-
-	.position-slider {
-		width: 100%;
-		height: 6px;
-		border-radius: 3px;
-		background: linear-gradient(90deg, #dc2626 0%, #6b7280 50%, #1e40af 100%);
-		outline: none;
-		-webkit-appearance: none;
-	}
-
-	.position-slider::-webkit-slider-thumb {
-		appearance: none;
-		width: 20px;
-		height: 20px;
-		border-radius: 50%;
-		background: #3b82f6;
-		cursor: pointer;
-		border: 2px solid white;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-	}
-
-	.priority-control {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
-
-	.priority-control label {
-		margin: 0;
-		font-size: 0.9rem;
-		color: #374151;
-	}
-
-	.priority-buttons {
-		display: flex;
-		gap: 5px;
-	}
-
-	.priority-btn {
-		width: 30px;
-		height: 30px;
-		border: 2px solid #e5e7eb;
-		border-radius: 6px;
-		background: white;
-		cursor: pointer;
-		font-weight: 600;
-		transition: all 0.2s;
-	}
-
-	.priority-btn:hover {
-		border-color: #3b82f6;
-	}
-
-	.priority-btn.selected {
-		border-color: #3b82f6;
-		background: #3b82f6;
-		color: white;
-	}
 
 	/* Navigation footer */
 	.navigation-footer {

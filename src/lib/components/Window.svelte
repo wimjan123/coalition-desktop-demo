@@ -1,27 +1,49 @@
 <script lang="ts">
-	import type { WindowData } from '../types/window.js';
+	import type { WindowData, ResizeDirection } from '../types/window.js';
+	import { startDrag } from '../utils/useDrag.js';
+	import { startResize } from '../utils/useResize.js';
+	import { focusWindow, minimizeWindow, removeWindow } from '../stores/stores.js';
 
 	export let windowData: WindowData;
 
 	let windowEl: HTMLElement;
 
 	function handleTitleBarPointerDown(event: PointerEvent) {
-		// Drag handling will be implemented later
-		console.log('Window drag started:', windowData.title);
+		if (!windowData.draggable || windowData.maximized) return;
+		startDrag(event, windowData.id, windowData.x, windowData.y);
+	}
+
+	function handleResizePointerDown(event: PointerEvent) {
+		if (!windowData.resizable || windowData.maximized) return;
+
+		const target = event.target as HTMLElement;
+		const direction = target.dataset.direction as ResizeDirection;
+		if (direction) {
+			startResize(event, windowData.id, direction, windowData);
+		}
+	}
+
+	function handleWindowPointerDown(event: PointerEvent) {
+		// Focus window when clicked (but not when dragging or resizing)
+		if (event.target === windowEl || (event.target as HTMLElement).closest('.content')) {
+			focusWindow(windowData.id);
+		}
 	}
 
 	function handleMinimize() {
-		windowData.minimized = true;
+		minimizeWindow(windowData.id);
 	}
 
 	function handleMaximize() {
-		// Toggle maximized state
+		// Toggle maximized state by updating the windowData
 		windowData.maximized = !windowData.maximized;
+
+		// Force reactivity by reassigning
+		windowData = { ...windowData };
 	}
 
 	function handleClose() {
-		// Close window logic will be implemented later
-		console.log('Window close requested:', windowData.title);
+		removeWindow(windowData.id);
 	}
 </script>
 
@@ -31,6 +53,7 @@
 		class:maximized={windowData.maximized}
 		class:focused={windowData.focused}
 		bind:this={windowEl}
+		on:pointerdown={handleWindowPointerDown}
 		style="
 			left: {windowData.x}px;
 			top: {windowData.y}px;
@@ -89,14 +112,14 @@
 		</div>
 
 		<!-- Resize handles -->
-		<div class="resize-handle resize-n" data-direction="n"></div>
-		<div class="resize-handle resize-s" data-direction="s"></div>
-		<div class="resize-handle resize-e" data-direction="e"></div>
-		<div class="resize-handle resize-w" data-direction="w"></div>
-		<div class="resize-handle resize-ne" data-direction="ne"></div>
-		<div class="resize-handle resize-nw" data-direction="nw"></div>
-		<div class="resize-handle resize-se" data-direction="se"></div>
-		<div class="resize-handle resize-sw" data-direction="sw"></div>
+		<div class="resize-handle resize-n" data-direction="n" on:pointerdown={handleResizePointerDown}></div>
+		<div class="resize-handle resize-s" data-direction="s" on:pointerdown={handleResizePointerDown}></div>
+		<div class="resize-handle resize-e" data-direction="e" on:pointerdown={handleResizePointerDown}></div>
+		<div class="resize-handle resize-w" data-direction="w" on:pointerdown={handleResizePointerDown}></div>
+		<div class="resize-handle resize-ne" data-direction="ne" on:pointerdown={handleResizePointerDown}></div>
+		<div class="resize-handle resize-nw" data-direction="nw" on:pointerdown={handleResizePointerDown}></div>
+		<div class="resize-handle resize-se" data-direction="se" on:pointerdown={handleResizePointerDown}></div>
+		<div class="resize-handle resize-sw" data-direction="sw" on:pointerdown={handleResizePointerDown}></div>
 	</div>
 {/if}
 

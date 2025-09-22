@@ -33,8 +33,8 @@ A satirical desktop environment built with Tauri v2, Svelte 5, and TypeScript. E
 ### Installation
 ```bash
 # Clone the repository
-git clone https://github.com/wimjan123/coalition-desktop.git
-cd coalition-desktop
+git clone https://github.com/wimjan123/coalition-desktop-demo.git
+cd coalition-desktop-demo
 
 # Install dependencies
 npm install

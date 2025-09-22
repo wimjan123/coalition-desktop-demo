@@ -6,6 +6,7 @@
 	import CharacterCreation from './CharacterCreation.svelte';
 	import CampaignIntro from './CampaignIntro.svelte';
 	import CampaignDashboard from './CampaignDashboard.svelte';
+	import AdvancedPolling from './AdvancedPolling.svelte';
 	import { windowsStore } from '../stores/stores.js';
 	import { isGameInitialized, initializeNewGame, loadGameFromLocal, gameStore, startCampaign } from '../stores/gameStore.js';
 	import { setupKeyboardShortcuts } from '../utils/useKeyboard.js';
@@ -84,9 +85,14 @@
 	}
 
 	let showCampaignDashboard = true;
+	let showPollingApp = false;
 
 	function toggleCampaignDashboard() {
 		showCampaignDashboard = !showCampaignDashboard;
+	}
+
+	function togglePollingApp() {
+		showPollingApp = !showPollingApp;
 	}
 
 	onDestroy(async () => {
@@ -138,9 +144,15 @@
 			</div>
 		{/if}
 
+		<!-- Show polling app overlay -->
+		{#if showPollingApp && $isGameInitialized}
+			<AdvancedPolling on:close={() => showPollingApp = false} />
+		{/if}
+
 		<!-- Dock at the bottom -->
 		<Dock
 			bind:showCampaignDashboard={showCampaignDashboard}
+			bind:showPollingApp={showPollingApp}
 			currentPhase={$gameStore?.currentPhase}
 		/>
 

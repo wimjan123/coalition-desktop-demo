@@ -5,11 +5,9 @@
 	import { DUTCH_REGIONS } from '../types/regions.js';
 	import CampaignVideo from './CampaignVideo.svelte';
 	import RegionalCampaign from './RegionalCampaign.svelte';
-	import AdvancedPolling from './AdvancedPolling.svelte';
 
 	let showVideoCreator = false;
 	let showRegionalCampaign = false;
-	let showAdvancedPolling = false;
 
 	$: gameState = $gameStore;
 	$: player = gameState?.player;
@@ -73,13 +71,6 @@
 		showRegionalCampaign = false;
 	}
 
-	function openAdvancedPolling() {
-		showAdvancedPolling = true;
-	}
-
-	function handleAdvancedPollingClosed() {
-		showAdvancedPolling = false;
-	}
 
 	function nextDay() {
 		advanceCampaignDay();
@@ -163,9 +154,6 @@
 					</button>
 					<button class="action-btn primary" on:click={openRegionalCampaign}>
 						🗺️ Regional Campaign
-					</button>
-					<button class="action-btn primary" on:click={openAdvancedPolling}>
-						📊 Maurit de Kat Polling
 					</button>
 					<button class="action-btn" disabled>
 						📺 Media Interview
@@ -309,11 +297,6 @@
 	/>
 {/if}
 
-{#if showAdvancedPolling}
-	<AdvancedPolling
-		on:close={handleAdvancedPollingClosed}
-	/>
-{/if}
 
 <style>
 	.campaign-dashboard {

@@ -3,6 +3,7 @@
 	import { clearGameState } from '../stores/gameStore.js';
 
 	export let showCampaignDashboard: boolean = true;
+	export let showPollingApp: boolean = false;
 	export let currentPhase: string | undefined = undefined;
 
 	const apps = [
@@ -29,6 +30,9 @@
 		} else if (app.appType === 'campaign') {
 			// Special case: Toggle campaign dashboard
 			showCampaignDashboard = true;
+		} else if (app.appType === 'polling') {
+			// Special case: Toggle polling app
+			showPollingApp = true;
 		} else {
 			createWindow({
 				title: app.name,
@@ -47,7 +51,7 @@
 		{#each campaignApps as app (app.id)}
 			<button
 				class="dock-item"
-				class:active={app.appType === 'campaign' && showCampaignDashboard}
+				class:active={(app.appType === 'campaign' && showCampaignDashboard) || (app.appType === 'polling' && showPollingApp)}
 				on:click={() => launchApp(app)}
 				aria-label="Launch {app.name}"
 				title={app.name}

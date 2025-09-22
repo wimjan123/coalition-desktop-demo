@@ -5,22 +5,73 @@
 	import Window from './Window.svelte';
 	import { windowsStore } from '../stores/stores.js';
 	import { setupKeyboardShortcuts } from '../utils/useKeyboard.js';
+	import { restoreLayout, setupAutoSave, saveLayout } from '../utils/usePersistence.js';
 
 	let desktopEl: HTMLElement;
 	let keyboardCleanup: (() => void) | null = null;
+	let autoSaveCleanup: (() => void) | null = null;
 
-	onMount(() => {
+	onMount(async () => {
 		console.log('Coalition Desktop initialized');
 
 		// Setup global keyboard shortcuts
 		keyboardCleanup = setupKeyboardShortcuts();
 		console.log('Keyboard shortcuts enabled');
+
+		// Restore saved layout if available
+		try {
+			const restored = await restoreLayout();
+			if (restored) {
+				console.log('Desktop layout restored from saved state');
+			} else {
+				console.log('No saved layout found, starting fresh');
+			}
+		} catch (error) {
+			console.error('Failed to restore layout:', error);
+		}
+
+		// Setup auto-save every 30 seconds
+		autoSaveCleanup = setupAutoSave(30000);
+		console.log('Auto-save enabled (30s interval)');
+
+		// Save layout when the page is about to unload
+		const handleBeforeUnload = async () => {
+			try {
+				await saveLayout();
+				console.log('Layout saved before page unload');
+			} catch (error) {
+				console.error('Failed to save layout on exit:', error);
+			}
+		};
+
+		window.addEventListener('beforeunload', handleBeforeUnload);
+
+		// Add cleanup for beforeunload
+		if (!keyboardCleanup) keyboardCleanup = () => {};
+		const originalCleanup = keyboardCleanup;
+		keyboardCleanup = () => {
+			window.removeEventListener('beforeunload', handleBeforeUnload);
+			originalCleanup();
+		};
 	});
 
-	onDestroy(() => {
+	onDestroy(async () => {
+		// Save layout before component destruction
+		try {
+			await saveLayout();
+			console.log('Layout saved on component destroy');
+		} catch (error) {
+			console.error('Failed to save layout on destroy:', error);
+		}
+
 		// Clean up keyboard event listeners
 		if (keyboardCleanup) {
 			keyboardCleanup();
+		}
+
+		// Clean up auto-save
+		if (autoSaveCleanup) {
+			autoSaveCleanup();
 		}
 	});
 </script>

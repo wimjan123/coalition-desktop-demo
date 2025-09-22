@@ -24,7 +24,21 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "capabilities": [
+        {
+          "identifier": "fs-access",
+          "description": "File system access for layout persistence",
+          "windows": ["main"],
+          "permissions": [
+            "fs:read-text-file",
+            "fs:write-text-file",
+            "fs:exists",
+            "fs:create-dir",
+            "path:app-data-dir"
+          ]
+        }
+      ]
     }
   },
   "bundle": {

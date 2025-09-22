@@ -1,6 +1,7 @@
 import { get } from 'svelte/store';
-import { windowsStore, focusWindow, removeWindow, minimizeWindow, updateWindow } from '../stores/stores.js';
+import { windowsStore, focusWindow, removeWindow, minimizeWindow, updateWindow, addToast } from '../stores/stores.js';
 import { getFocusedWindow, getNextWindowInZOrder, getPreviousWindowInZOrder } from './zorder.js';
+import { saveLayout, restoreLayout, clearLayout } from './usePersistence.js';
 
 /**
  * Global keyboard shortcut handler for desktop environment
@@ -90,6 +91,74 @@ export function setupKeyboardShortcuts() {
 			}
 			return;
 		}
+
+		// ⌘S or Ctrl+S - Save layout manually
+		if (modifier && event.key === 's') {
+			event.preventDefault();
+			try {
+				await saveLayout();
+				addToast({
+					type: 'success',
+					message: 'Desktop layout saved successfully',
+					duration: 3000
+				});
+			} catch (error) {
+				addToast({
+					type: 'error',
+					message: 'Failed to save layout',
+					duration: 5000
+				});
+			}
+			return;
+		}
+
+		// ⌘R or Ctrl+R - Restore layout manually
+		if (modifier && event.key === 'r') {
+			event.preventDefault();
+			try {
+				const restored = await restoreLayout();
+				if (restored) {
+					addToast({
+						type: 'success',
+						message: 'Desktop layout restored successfully',
+						duration: 3000
+					});
+				} else {
+					addToast({
+						type: 'warning',
+						message: 'No saved layout found to restore',
+						duration: 3000
+					});
+				}
+			} catch (error) {
+				addToast({
+					type: 'error',
+					message: 'Failed to restore layout',
+					duration: 5000
+				});
+			}
+			return;
+		}
+
+		// ⌘Shift+R or Ctrl+Shift+R - Clear saved layout
+		if (modifier && event.shiftKey && event.key === 'R') {
+			event.preventDefault();
+			try {
+				await clearLayout();
+				addToast({
+					type: 'info',
+					message: 'Saved layout cleared',
+					duration: 3000
+				});
+			} catch (error) {
+				addToast({
+					type: 'error',
+					message: 'Failed to clear layout',
+					duration: 5000
+				});
+			}
+			return;
+		}
 	}
 
 	// Add global event listener
@@ -141,7 +210,10 @@ export function getKeyboardShortcuts() {
 		{ keys: ['mod', 'shift', '`'], description: 'Cycle backwards through windows' },
 		{ keys: ['mod', 'm'], description: 'Minimize focused window' },
 		{ keys: ['mod', 'enter'], description: 'Toggle maximize focused window' },
-		{ keys: ['escape'], description: 'Cancel operation or minimize window' }
+		{ keys: ['escape'], description: 'Cancel operation or minimize window' },
+		{ keys: ['mod', 's'], description: 'Save desktop layout' },
+		{ keys: ['mod', 'r'], description: 'Restore desktop layout' },
+		{ keys: ['mod', 'shift', 'r'], description: 'Clear saved layout' }
 	].map(shortcut => ({
 		...shortcut,
 		formatted: formatShortcut(shortcut.keys)

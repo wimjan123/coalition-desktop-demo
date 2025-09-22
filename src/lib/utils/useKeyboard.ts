@@ -48,8 +48,7 @@ export function setupKeyboardShortcuts() {
 		if (event.key === 'Escape') {
 			event.preventDefault();
 
-			// For now, just minimize the focused window
-			// TODO: Add cancel drag/resize functionality
+			// Minimize the focused window on Escape
 			const focusedWindow = getFocusedWindow();
 			if (focusedWindow) {
 				minimizeWindow(focusedWindow.id);

@@ -17,9 +17,12 @@ export const desktopStore = writable({
 });
 
 // Window management functions
+let windowCounter = 0;
+
 export function addWindow(windowData: Omit<WindowData, 'id' | 'zIndex' | 'focused'>) {
 	windowsStore.update(windows => {
-		const id = `window-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+		windowCounter++;
+		const id = `window-${Date.now()}-${windowCounter.toString(36)}`;
 
 		// Get next z-index and focus this window
 		desktopStore.update(state => ({
@@ -120,8 +123,11 @@ export function restoreWindow(windowId: string) {
 }
 
 // Toast management functions
+let toastCounter = 0;
+
 export function addToast(toast: Omit<Toast, 'id'>) {
-	const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+	toastCounter++;
+	const id = `toast-${Date.now()}-${toastCounter.toString(36)}`;
 
 	toastsStore.update(toasts => [...toasts, { id, ...toast }]);
 

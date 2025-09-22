@@ -34,13 +34,19 @@
 			// Special case: Toggle polling app
 			showPollingApp = true;
 		} else {
+			// Position windows in a predictable cascade pattern
+			const windowCount = document.querySelectorAll('.window').length;
+			const offsetStep = 30;
+			const baseX = 150;
+			const baseY = 100;
+
 			createWindow({
 				title: app.name,
 				appType: app.appType,
 				width: 600,
 				height: 400,
-				x: Math.random() * 300 + 100,
-				y: Math.random() * 200 + 100
+				x: baseX + (windowCount * offsetStep) % 400,
+				y: baseY + (windowCount * offsetStep) % 300
 			});
 		}
 	}

@@ -84,11 +84,27 @@
 
 		if (partyPosition !== undefined) {
 			// Calculate alignment between party position and voter base position
-			return 100 - Math.abs(partyPosition - (group.basePositions?.climate || 0));
+			const voterPosition = group.basePositions?.climate || 0;
+			return Math.max(0, 100 - Math.abs(partyPosition - voterPosition));
 		}
 
-		// General alignment score
-		return 50 + Math.random() * 30;
+		// Calculate general alignment based on party positions vs group preferences
+		const party = gameState?.playerParty;
+		if (!party?.positions || party.positions.length === 0) return 25; // Low alignment with no positions
+
+		let totalAlignment = 0;
+		let weightedCount = 0;
+
+		party.positions.forEach(position => {
+			const voterPosition = group.basePositions?.[position.issueId] || 0;
+			const importance = group.issueImportance?.[position.issueId] || 1;
+			const alignment = Math.max(0, 100 - Math.abs(position.position - voterPosition));
+
+			totalAlignment += alignment * importance;
+			weightedCount += importance;
+		});
+
+		return weightedCount > 0 ? totalAlignment / weightedCount : 25;
 	}
 
 	function getPartyPositionOnIssue(issueId: string): number {
@@ -165,13 +181,42 @@
 	}
 
 	function calculatePollingTrends() {
-		// Simulate polling trends over time
+		// Calculate real polling trends based on campaign activities
 		const trends = [];
-		for (let day = Math.max(1, currentDay - 14); day <= currentDay; day++) {
+		const startDay = Math.max(1, currentDay - 14);
+
+		for (let day = startDay; day <= currentDay; day++) {
+			// Base polling starts very low and grows based on campaign activities
+			let dayPolling = 0.5; // Start very low
+			let dayAwareness = 1; // Start very low
+
+			// Add impact from campaign videos created up to this day
+			const videosUpToDay = campaignVideos.filter(v => v.createdOn <= day);
+			videosUpToDay.forEach(video => {
+				const daysAgo = day - video.createdOn;
+				const decay = Math.max(0.1, 1 - (daysAgo * 0.1)); // Effect decays over time
+				dayPolling += (video.effectiveness / 100) * decay * 0.5;
+				dayAwareness += (video.effectiveness / 100) * decay * 2;
+			});
+
+			// Add impact from regional campaign activities
+			if (regionalData) {
+				Object.values(regionalData).forEach(region => {
+					if (region.lastActivity && region.lastActivity <= day) {
+						const daysAgo = day - region.lastActivity;
+						const decay = Math.max(0.1, 1 - (daysAgo * 0.15));
+						const regionWeight = DUTCH_REGIONS.find(r => r.id === region.regionId)?.electoralWeight || 1;
+
+						dayPolling += (region.polling * regionWeight / 100) * decay * 0.1;
+						dayAwareness += (region.awareness * regionWeight / 100) * decay * 0.3;
+					}
+				});
+			}
+
 			trends.push({
 				day,
-				polling: Math.max(0, overallPolling + (Math.random() - 0.5) * 2),
-				awareness: 15 + (day - 1) * 2 + Math.random() * 5
+				polling: Math.min(100, dayPolling),
+				awareness: Math.min(100, dayAwareness)
 			});
 		}
 		return trends;

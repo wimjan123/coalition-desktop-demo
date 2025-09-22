@@ -37,7 +37,7 @@ export function initializeNewGame(player: PlayerCharacter, party: Party, difficu
 		difficulty,
 		isFirstTime: true,
 		daysUntilElection: 60,
-		currentCrisis: crisisScenarios[Math.floor(Math.random() * crisisScenarios.length)]
+		currentCrisis: crisisScenarios[0] // Start with immigration crisis for consistency
 	};
 
 	gameStore.set(newGameState);
@@ -133,16 +133,16 @@ function initializeRegionalData(playerParty: Party): { [regionId: string]: Regio
 			baseSupport += 0.5; // Tiny boost in swing regions
 		}
 
-		// Add some randomness based on volatility
-		const volatilityFactor = (Math.random() - 0.5) * region.politicalProfile.volatility * 0.2;
+		// Add slight variation based on volatility (deterministic)
+		const volatilityFactor = (region.politicalProfile.volatility - 50) / 1000; // Small deterministic variation
 		baseSupport += volatilityFactor;
 
 		regionalData[region.id] = {
 			regionId: region.id,
 			polling: Math.max(0.1, Math.min(5, baseSupport)), // Cap initial support 0.1-5%
-			awareness: 2 + Math.random() * 3, // Start with very low awareness 2-5%
+			awareness: 2.0, // Start with consistent very low awareness
 			campaignSpending: 0,
-			mediaPresence: 0.5 + Math.random() * 1.5, // Minimal initial media presence
+			mediaPresence: 1.0, // Minimal consistent initial media presence
 			localIssueStances: {}
 		};
 	});
@@ -325,8 +325,9 @@ export function advanceCampaignDay() {
 		DUTCH_DEMOGRAPHICS.forEach(group => {
 			const segment = updatedPopulation[group.id];
 			if (segment) {
-				// Small natural drift based on volatility
-				const naturalDrift = (Math.random() - 0.5) * group.volatility * 0.1;
+				// Small natural drift based on volatility and day cycle
+				const cycleFactor = Math.sin((newDay * Math.PI) / 30) * 0.1; // 30-day cycle
+				const naturalDrift = cycleFactor * group.volatility * 0.05;
 				segment.currentSupport = Math.max(0.05, segment.currentSupport + naturalDrift);
 
 				// Awareness decay if no campaign activity
@@ -339,10 +340,13 @@ export function advanceCampaignDay() {
 			const data = updatedRegionalData[regionId];
 			const daysSinceActivity = newDay - (data.lastActivity || 0);
 
-			// Natural regional polling drift
+			// Natural regional polling drift based on region characteristics
 			const region = DUTCH_REGIONS.find(r => r.id === regionId);
 			if (region) {
-				const naturalDrift = (Math.random() - 0.5) * region.politicalProfile.volatility * 0.05;
+				// Use region-specific factors for deterministic drift
+				const regionSeed = regionId.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+				const cycleFactor = Math.sin((newDay * Math.PI + regionSeed) / 21) * 0.08; // 21-day cycle with region offset
+				const naturalDrift = cycleFactor * (region.politicalProfile.volatility / 100) * 0.03;
 				data.polling = Math.max(0.05, data.polling + naturalDrift);
 			}
 

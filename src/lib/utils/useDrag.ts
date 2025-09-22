@@ -1,8 +1,12 @@
 import { get } from 'svelte/store';
 import { desktopStore, focusWindow, updateWindowPosition } from '../stores/stores.js';
 import type { DragState } from '../types/window.js';
+import { rafThrottle, perfMonitor, optimizeForDragging, restoreAfterDragging } from './usePerformance.js';
 
 let currentDragState: DragState | null = null;
+
+// Throttled drag move handler for better performance
+const throttledDragMove = rafThrottle(handleDragMove);
 
 export function startDrag(
 	event: PointerEvent,
@@ -39,8 +43,14 @@ export function startDrag(
 	const target = event.target as HTMLElement;
 	target.setPointerCapture(event.pointerId);
 
-	// Add event listeners
-	document.addEventListener('pointermove', handleDragMove);
+	// Optimize window element for dragging
+	const windowEl = target.closest('.window') as HTMLElement;
+	if (windowEl) {
+		optimizeForDragging(windowEl);
+	}
+
+	// Add event listeners with throttled handler
+	document.addEventListener('pointermove', throttledDragMove);
 	document.addEventListener('pointerup', handleDragEnd);
 	document.addEventListener('pointercancel', handleDragEnd);
 
@@ -51,6 +61,9 @@ export function startDrag(
 
 function handleDragMove(event: PointerEvent) {
 	if (!currentDragState) return;
+
+	// Start performance timing
+	const endTiming = perfMonitor.start('drag');
 
 	const deltaX = event.clientX - currentDragState.startX;
 	const deltaY = event.clientY - currentDragState.startY;
@@ -63,13 +76,18 @@ function handleDragMove(event: PointerEvent) {
 	const constrainedY = Math.max(0, Math.min(window.innerHeight - 100, newY));
 
 	updateWindowPosition(currentDragState.windowId, constrainedX, constrainedY);
+
+	// End performance timing
+	endTiming();
 }
 
 function handleDragEnd(event: PointerEvent) {
 	if (!currentDragState) return;
 
+	const windowId = currentDragState.windowId;
+
 	// Clean up
-	document.removeEventListener('pointermove', handleDragMove);
+	document.removeEventListener('pointermove', throttledDragMove);
 	document.removeEventListener('pointerup', handleDragEnd);
 	document.removeEventListener('pointercancel', handleDragEnd);
 
@@ -77,6 +95,12 @@ function handleDragEnd(event: PointerEvent) {
 	const target = event.target as HTMLElement;
 	if (target && target.releasePointerCapture) {
 		target.releasePointerCapture(event.pointerId);
+	}
+
+	// Restore window element after dragging
+	const windowEl = target.closest('.window') as HTMLElement;
+	if (windowEl) {
+		restoreAfterDragging(windowEl);
 	}
 
 	// Reset cursor and selection

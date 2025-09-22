@@ -2,6 +2,7 @@ import { get } from 'svelte/store';
 import { windowsStore, focusWindow, removeWindow, minimizeWindow, updateWindow, addToast } from '../stores/stores.js';
 import { getFocusedWindow, getNextWindowInZOrder, getPreviousWindowInZOrder } from './zorder.js';
 import { saveLayout, restoreLayout, clearLayout } from './usePersistence.js';
+import { perfMonitor } from './usePerformance.js';
 
 /**
  * Global keyboard shortcut handler for desktop environment
@@ -159,6 +160,18 @@ export function setupKeyboardShortcuts() {
 			}
 			return;
 		}
+
+		// ⌘Shift+P or Ctrl+Shift+P - Show performance report
+		if (modifier && event.shiftKey && event.key === 'P') {
+			event.preventDefault();
+			perfMonitor.logReport();
+			addToast({
+				type: 'info',
+				message: 'Performance report logged to console',
+				duration: 3000
+			});
+			return;
+		}
 	}
 
 	// Add global event listener
@@ -213,7 +226,8 @@ export function getKeyboardShortcuts() {
 		{ keys: ['escape'], description: 'Cancel operation or minimize window' },
 		{ keys: ['mod', 's'], description: 'Save desktop layout' },
 		{ keys: ['mod', 'r'], description: 'Restore desktop layout' },
-		{ keys: ['mod', 'shift', 'r'], description: 'Clear saved layout' }
+		{ keys: ['mod', 'shift', 'r'], description: 'Clear saved layout' },
+		{ keys: ['mod', 'shift', 'p'], description: 'Show performance report' }
 	].map(shortcut => ({
 		...shortcut,
 		formatted: formatShortcut(shortcut.keys)

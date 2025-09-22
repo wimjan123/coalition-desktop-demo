@@ -134,7 +134,11 @@
 		overflow: hidden;
 		border: 1px solid rgba(255, 255, 255, 0.2);
 		backdrop-filter: blur(10px);
-		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+		transition: box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+		/* Optimize for transforms and GPU acceleration */
+		will-change: transform;
+		backface-visibility: hidden;
+		transform-style: preserve-3d;
 	}
 
 	.window.maximized {

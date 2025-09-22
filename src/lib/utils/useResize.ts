@@ -1,8 +1,12 @@
 import { get } from 'svelte/store';
 import { desktopStore, focusWindow, updateWindowPosition, updateWindowSize, windowsStore } from '../stores/stores.js';
 import type { ResizeState, ResizeDirection, WindowData } from '../types/window.js';
+import { rafThrottle, perfMonitor, optimizeForDragging, restoreAfterDragging } from './usePerformance.js';
 
 let currentResizeState: ResizeState | null = null;
+
+// Throttled resize move handler for better performance
+const throttledResizeMove = rafThrottle(handleResizeMove);
 
 export function startResize(
 	event: PointerEvent,
@@ -42,8 +46,14 @@ export function startResize(
 	const target = event.target as HTMLElement;
 	target.setPointerCapture(event.pointerId);
 
-	// Add event listeners
-	document.addEventListener('pointermove', handleResizeMove);
+	// Optimize window element for resizing
+	const windowEl = target.closest('.window') as HTMLElement;
+	if (windowEl) {
+		optimizeForDragging(windowEl); // Same optimization works for resize
+	}
+
+	// Add event listeners with throttled handler
+	document.addEventListener('pointermove', throttledResizeMove);
 	document.addEventListener('pointerup', handleResizeEnd);
 	document.addEventListener('pointercancel', handleResizeEnd);
 
@@ -54,6 +64,9 @@ export function startResize(
 
 function handleResizeMove(event: PointerEvent) {
 	if (!currentResizeState) return;
+
+	// Start performance timing
+	const endTiming = perfMonitor.start('resize');
 
 	const deltaX = event.clientX - currentResizeState.startX;
 	const deltaY = event.clientY - currentResizeState.startY;
@@ -132,13 +145,16 @@ function handleResizeMove(event: PointerEvent) {
 	if (newX !== currentResizeState.startWindowX || newY !== currentResizeState.startWindowY) {
 		updateWindowPosition(currentResizeState.windowId, newX, newY);
 	}
+
+	// End performance timing
+	endTiming();
 }
 
 function handleResizeEnd(event: PointerEvent) {
 	if (!currentResizeState) return;
 
 	// Clean up
-	document.removeEventListener('pointermove', handleResizeMove);
+	document.removeEventListener('pointermove', throttledResizeMove);
 	document.removeEventListener('pointerup', handleResizeEnd);
 	document.removeEventListener('pointercancel', handleResizeEnd);
 
@@ -146,6 +162,12 @@ function handleResizeEnd(event: PointerEvent) {
 	const target = event.target as HTMLElement;
 	if (target && target.releasePointerCapture) {
 		target.releasePointerCapture(event.pointerId);
+	}
+
+	// Restore window element after resizing
+	const windowEl = target.closest('.window') as HTMLElement;
+	if (windowEl) {
+		restoreAfterDragging(windowEl);
 	}
 
 	// Reset cursor and selection

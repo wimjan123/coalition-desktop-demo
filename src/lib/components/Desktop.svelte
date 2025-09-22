@@ -1,15 +1,27 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import Dock from './Dock.svelte';
 	import Toasts from './Toasts.svelte';
 	import Window from './Window.svelte';
 	import { windowsStore } from '../stores/stores.js';
+	import { setupKeyboardShortcuts } from '../utils/useKeyboard.js';
 
 	let desktopEl: HTMLElement;
+	let keyboardCleanup: (() => void) | null = null;
 
 	onMount(() => {
-		// Desktop initialization logic will go here
 		console.log('Coalition Desktop initialized');
+
+		// Setup global keyboard shortcuts
+		keyboardCleanup = setupKeyboardShortcuts();
+		console.log('Keyboard shortcuts enabled');
+	});
+
+	onDestroy(() => {
+		// Clean up keyboard event listeners
+		if (keyboardCleanup) {
+			keyboardCleanup();
+		}
 	});
 </script>
 

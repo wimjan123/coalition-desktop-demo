@@ -143,3 +143,11 @@ export function removeToast(toastId: string) {
 export function clearAllToasts() {
 	toastsStore.set([]);
 }
+
+export function updateWindow(windowId: string, updates: Partial<WindowData>) {
+	windowsStore.update(windows => {
+		return windows.map(w =>
+			w.id === windowId ? { ...w, ...updates } : w
+		);
+	});
+}

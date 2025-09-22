@@ -1,0 +1,122 @@
+<script lang="ts">
+	import { createWindow } from '../utils/window-manager.js';
+
+	const apps = [
+		{ id: 'mail', name: 'Mail', icon: '📧', appType: 'mail' },
+		{ id: 'chat', name: 'Chat', icon: '💬', appType: 'chat' },
+		{ id: 'polling', name: 'Polling', icon: '📊', appType: 'polling' },
+		{ id: 'calendar', name: 'Calendar', icon: '📅', appType: 'calendar' },
+		{ id: 'cabinet', name: 'Cabinet', icon: '🗄️', appType: 'cabinet' },
+		{ id: 'policy', name: 'Policy', icon: '📋', appType: 'policy' },
+		{ id: 'media', name: 'Media', icon: '📺', appType: 'media' }
+	];
+
+	function launchApp(app: typeof apps[0]) {
+		createWindow({
+			title: app.name,
+			appType: app.appType,
+			width: 600,
+			height: 400,
+			x: Math.random() * 300 + 100,
+			y: Math.random() * 200 + 100
+		});
+	}
+</script>
+
+<div class="dock" role="toolbar" aria-label="Application dock">
+	<div class="dock-container">
+		{#each apps as app (app.id)}
+			<button
+				class="dock-item"
+				on:click={() => launchApp(app)}
+				aria-label="Launch {app.name}"
+				title={app.name}
+			>
+				<span class="dock-icon" role="img" aria-label="{app.name} icon">
+					{app.icon}
+				</span>
+				<span class="dock-label">{app.name}</span>
+			</button>
+		{/each}
+	</div>
+</div>
+
+<style>
+	.dock {
+		position: absolute;
+		bottom: 16px;
+		left: 50%;
+		transform: translateX(-50%);
+		z-index: 1000;
+	}
+
+	.dock-container {
+		display: flex;
+		gap: 8px;
+		padding: 12px 16px;
+		background: rgba(255, 255, 255, 0.15);
+		backdrop-filter: blur(20px);
+		border-radius: 16px;
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		box-shadow:
+			0 8px 32px rgba(0, 0, 0, 0.3),
+			inset 0 1px 0 rgba(255, 255, 255, 0.2);
+	}
+
+	.dock-item {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+		padding: 8px;
+		background: transparent;
+		border: none;
+		border-radius: 12px;
+		cursor: pointer;
+		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+		color: white;
+		min-width: 60px;
+	}
+
+	.dock-item:hover {
+		background: rgba(255, 255, 255, 0.2);
+		transform: translateY(-4px) scale(1.05);
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+	}
+
+	.dock-item:active {
+		transform: translateY(-2px) scale(1.02);
+	}
+
+	.dock-icon {
+		font-size: 24px;
+		display: block;
+		filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+	}
+
+	.dock-label {
+		font-size: 10px;
+		font-weight: 500;
+		text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+		white-space: nowrap;
+	}
+
+	@media (max-width: 768px) {
+		.dock-container {
+			flex-wrap: wrap;
+			max-width: 280px;
+		}
+
+		.dock-item {
+			min-width: 50px;
+		}
+
+		.dock-icon {
+			font-size: 20px;
+		}
+
+		.dock-label {
+			font-size: 9px;
+		}
+	}
+</style>

@@ -1,8 +1,19 @@
 // Dynamic imports for Tauri APIs to handle web/native environments
 async function getTauriAPIs() {
 	try {
-		const fs = await import('@tauri-apps/api/fs');
-		const path = await import('@tauri-apps/api/path');
+		// Check if we're in a Tauri environment first
+		if (typeof window !== 'undefined' && !(window as any).__TAURI__) {
+			console.log('Tauri APIs not available, persistence features disabled');
+			return null;
+		}
+
+		// Use dynamic import with variable to prevent Vite from resolving at build time
+		const tauriFs = '@tauri-apps/api/fs';
+		const tauriPath = '@tauri-apps/api/path';
+
+		const fs = await import(/* @vite-ignore */ tauriFs);
+		const path = await import(/* @vite-ignore */ tauriPath);
+
 		return {
 			writeTextFile: fs.writeTextFile,
 			readTextFile: fs.readTextFile,
@@ -203,18 +214,27 @@ export function setupAutoSave(intervalMs: number = 30000): () => void {
  */
 export async function clearLayout(): Promise<void> {
 	try {
-		const layoutPath = await getLayoutPath();
+		const apis = await getTauriAPIs();
+		if (!apis) {
+			console.log('Persistence not available in web mode');
+			return;
+		}
 
-		if (await exists(layoutPath)) {
+		const layoutPath = await getLayoutPath();
+		if (!layoutPath) {
+			throw new Error('Failed to get layout path');
+		}
+
+		if (await apis.exists(layoutPath)) {
 			// For now, we'll just rename it with a timestamp
 			// Tauri doesn't have a direct delete file API exposed in some versions
 			const timestamp = Date.now();
 			const backupPath = layoutPath.replace('.json', `.backup-${timestamp}.json`);
 
 			// Read and write to backup location, then clear original
-			const content = await readTextFile(layoutPath);
-			await writeTextFile(backupPath, content);
-			await writeTextFile(layoutPath, '{}');
+			const content = await apis.readTextFile(layoutPath);
+			await apis.writeTextFile(backupPath, content);
+			await apis.writeTextFile(layoutPath, '{}');
 
 			console.log('Layout cleared and backed up');
 		}
@@ -250,9 +270,18 @@ export async function importLayout(jsonData: string): Promise<boolean> {
 		}
 
 		// Save the imported layout
+		const apis = await getTauriAPIs();
+		if (!apis) {
+			throw new Error('Persistence not available in web mode');
+		}
+
 		await ensureAppDataDir();
 		const layoutPath = await getLayoutPath();
-		await writeTextFile(layoutPath, JSON.stringify(layout, null, 2));
+		if (!layoutPath) {
+			throw new Error('Failed to get layout path');
+		}
+
+		await apis.writeTextFile(layoutPath, JSON.stringify(layout, null, 2));
 
 		// Restore the imported layout
 		return await restoreLayout();

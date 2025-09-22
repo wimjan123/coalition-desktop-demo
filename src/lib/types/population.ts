@@ -280,10 +280,10 @@ export function initializePopulation(): { [groupId: string]: PopulationSegment }
 	DUTCH_DEMOGRAPHICS.forEach(group => {
 		population[group.id] = {
 			groupId: group.id,
-			currentSupport: 5 + Math.random() * 10, // Start with low random support
+			currentSupport: 0.1 + Math.random() * 0.9, // Start with minimal support (0.1-1%)
 			issuePositions: { ...group.basePositions },
-			awareness: 2 + Math.random() * 8, // Low initial awareness
-			enthusiasm: 30 + Math.random() * 20 // Moderate base turnout
+			awareness: 0.5 + Math.random() * 2, // Very low initial awareness (0.5-2.5%)
+			enthusiasm: 20 + Math.random() * 10 // Low base turnout for new party
 		};
 	});
 

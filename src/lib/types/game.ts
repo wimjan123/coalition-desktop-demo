@@ -44,6 +44,18 @@ export interface CampaignVideo {
 	tone: 'aggressive' | 'moderate' | 'empathetic';
 	createdOn: number; // Day number
 	effectiveness: number; // 0-100 calculated score
+	targetedRegions?: string[]; // Region IDs for targeted campaigns
+	localIssues?: string[]; // Local issue IDs addressed
+}
+
+export interface RegionalCampaignData {
+	regionId: string;
+	polling: number; // 0-100 regional support
+	awareness: number; // 0-100 voter awareness in region
+	campaignSpending: number; // Total spent in this region
+	mediaPresence: number; // 0-100 media coverage in region
+	lastActivity?: number; // Day of last campaign activity
+	localIssueStances?: { [issueId: string]: number }; // -100 to 100
 }
 
 export interface GameState {
@@ -65,6 +77,9 @@ export interface GameState {
 	currentDay?: number; // Days since campaign started
 	campaignBudget?: number;
 	overallPolling?: number; // 0-100 overall support
+	// Regional campaign data
+	regionalData?: { [regionId: string]: RegionalCampaignData };
+	nationalCampaignFocus?: string; // 'national' | 'regional'
 }
 
 // Dutch political issues for the game

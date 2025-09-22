@@ -2,9 +2,14 @@
 	import { onMount } from 'svelte';
 	import { gameStore, advanceCampaignDay, saveGameToLocal } from '../stores/gameStore.js';
 	import { DUTCH_DEMOGRAPHICS } from '../types/population.js';
+	import { DUTCH_REGIONS } from '../types/regions.js';
 	import CampaignVideo from './CampaignVideo.svelte';
+	import RegionalCampaign from './RegionalCampaign.svelte';
+	import AdvancedPolling from './AdvancedPolling.svelte';
 
 	let showVideoCreator = false;
+	let showRegionalCampaign = false;
+	let showAdvancedPolling = false;
 
 	$: gameState = $gameStore;
 	$: player = gameState?.player;
@@ -15,6 +20,7 @@
 	$: daysUntilElection = gameState?.daysUntilElection || 60;
 	$: campaignBudget = gameState?.campaignBudget || 0;
 	$: overallPolling = gameState?.overallPolling || 0;
+	$: regionalData = gameState?.regionalData || {};
 
 	// Calculate demographic support breakdown
 	$: demographicSupport = population ? DUTCH_DEMOGRAPHICS.map(group => {
@@ -25,6 +31,18 @@
 			awareness: segment?.awareness || 0
 		};
 	}).sort((a, b) => b.support - a.support) : [];
+
+	// Calculate regional support breakdown
+	$: regionalSupport = DUTCH_REGIONS.map(region => {
+		const data = regionalData[region.id];
+		return {
+			...region,
+			support: data?.polling || 0,
+			awareness: data?.awareness || 0,
+			spending: data?.campaignSpending || 0,
+			lastActivity: data?.lastActivity
+		};
+	}).sort((a, b) => b.support - a.support);
 
 	// Auto-save every time game state changes
 	$: if (gameState) {
@@ -41,6 +59,26 @@
 
 	function handleVideoCancel() {
 		showVideoCreator = false;
+	}
+
+	function openRegionalCampaign() {
+		showRegionalCampaign = true;
+	}
+
+	function handleRegionalCampaignClosed() {
+		showRegionalCampaign = false;
+	}
+
+	function handleRegionalCampaignConducted() {
+		showRegionalCampaign = false;
+	}
+
+	function openAdvancedPolling() {
+		showAdvancedPolling = true;
+	}
+
+	function handleAdvancedPollingClosed() {
+		showAdvancedPolling = false;
 	}
 
 	function nextDay() {
@@ -123,6 +161,12 @@
 					<button class="action-btn primary" on:click={createVideo}>
 						📹 Create Campaign Video
 					</button>
+					<button class="action-btn primary" on:click={openRegionalCampaign}>
+						🗺️ Regional Campaign
+					</button>
+					<button class="action-btn primary" on:click={openAdvancedPolling}>
+						📊 Maurit de Kat Polling
+					</button>
 					<button class="action-btn" disabled>
 						📺 Media Interview
 					</button>
@@ -158,6 +202,43 @@
 										<div class="progress-fill" style="width: {group.awareness}%; background-color: #6b7280"></div>
 									</div>
 									<span class="metric-text">{group.awareness.toFixed(1)}% ({getAwarenessLevel(group.awareness)})</span>
+								</div>
+							</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+
+			<div class="regional-section">
+				<h2>Regional Support</h2>
+				<div class="regional-list">
+					{#each regionalSupport as region}
+						<div class="regional-item">
+							<div class="regional-header">
+								<span class="region-name">{region.name}</span>
+								<span class="region-weight">{region.electoralWeight}% votes</span>
+							</div>
+							<div class="regional-metrics">
+								<div class="support-metric">
+									<span class="metric-label">Support:</span>
+									<div class="progress-bar">
+										<div class="progress-fill" style="width: {region.support}%; background-color: {getPollingColor(region.support)}"></div>
+									</div>
+									<span class="metric-text">{region.support.toFixed(1)}% ({getSupportLevel(region.support)})</span>
+								</div>
+								<div class="awareness-metric">
+									<span class="metric-label">Awareness:</span>
+									<div class="progress-bar">
+										<div class="progress-fill" style="width: {region.awareness}%; background-color: #6b7280"></div>
+									</div>
+									<span class="metric-text">{region.awareness.toFixed(1)}% ({getAwarenessLevel(region.awareness)})</span>
+								</div>
+								<div class="spending-info">
+									<span class="spending-label">Campaign Spent:</span>
+									<span class="spending-amount">{formatBudget(region.spending)}</span>
+									{#if region.lastActivity}
+										<span class="last-activity">Last: Day {region.lastActivity}</span>
+									{/if}
 								</div>
 							</div>
 						</div>
@@ -218,6 +299,19 @@
 	<CampaignVideo
 		on:videoCreated={handleVideoCreated}
 		on:cancel={handleVideoCancel}
+	/>
+{/if}
+
+{#if showRegionalCampaign}
+	<RegionalCampaign
+		on:campaignConducted={handleRegionalCampaignConducted}
+		on:close={handleRegionalCampaignClosed}
+	/>
+{/if}
+
+{#if showAdvancedPolling}
+	<AdvancedPolling
+		on:close={handleAdvancedPollingClosed}
 	/>
 {/if}
 
@@ -304,6 +398,7 @@
 
 	.actions-section,
 	.demographics-section,
+	.regional-section,
 	.timeline-section,
 	.videos-section {
 		background: white;
@@ -315,6 +410,7 @@
 
 	.actions-section h2,
 	.demographics-section h2,
+	.regional-section h2,
 	.timeline-section h2,
 	.videos-section h2 {
 		margin: 0 0 16px 0;
@@ -365,32 +461,37 @@
 		background: #f9fafb;
 	}
 
-	.demographics-list {
+	.demographics-list,
+	.regional-list {
 		display: flex;
 		flex-direction: column;
 		gap: 16px;
 	}
 
-	.demographic-item {
+	.demographic-item,
+	.regional-item {
 		border: 1px solid #e5e7eb;
 		border-radius: 8px;
 		padding: 16px;
 		background: #f8fafc;
 	}
 
-	.demographic-header {
+	.demographic-header,
+	.regional-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 		margin-bottom: 12px;
 	}
 
-	.group-name {
+	.group-name,
+	.region-name {
 		font-weight: 600;
 		color: #1f2937;
 	}
 
-	.group-percentage {
+	.group-percentage,
+	.region-weight {
 		font-size: 12px;
 		color: #6b7280;
 		background: #e5e7eb;
@@ -398,7 +499,8 @@
 		border-radius: 12px;
 	}
 
-	.demographic-metrics {
+	.demographic-metrics,
+	.regional-metrics {
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
@@ -436,6 +538,32 @@
 		text-align: right;
 		color: #374151;
 		font-weight: 500;
+	}
+
+	.spending-info {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		font-size: 12px;
+		margin-top: 4px;
+		padding-top: 8px;
+		border-top: 1px solid #e5e7eb;
+	}
+
+	.spending-label {
+		color: #6b7280;
+		font-weight: 500;
+	}
+
+	.spending-amount {
+		color: #059669;
+		font-weight: 600;
+	}
+
+	.last-activity {
+		color: #6b7280;
+		font-style: italic;
+		font-size: 11px;
 	}
 
 	.day-info {

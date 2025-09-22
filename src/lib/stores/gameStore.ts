@@ -1,6 +1,7 @@
 import { writable } from 'svelte/store';
-import type { GameState, PlayerCharacter, Party, CampaignVideo } from '../types/game.js';
+import type { GameState, PlayerCharacter, Party, CampaignVideo, RegionalCampaignData } from '../types/game.js';
 import { initializePopulation, calculateCampaignImpact, DUTCH_DEMOGRAPHICS } from '../types/population.js';
+import { DUTCH_REGIONS } from '../types/regions.js';
 
 // Game state store
 export const gameStore = writable<GameState | null>(null);
@@ -83,6 +84,7 @@ export function startCampaign() {
 		// Initialize campaign-specific data
 		const population = initializePopulation();
 		const initialPolling = calculateInitialPolling(population);
+		const regionalData = initializeRegionalData(state.playerParty);
 
 		return {
 			...state,
@@ -92,7 +94,9 @@ export function startCampaign() {
 			campaignVideos: [],
 			currentDay: 1,
 			campaignBudget: 100000, // Starting budget
-			overallPolling: initialPolling
+			overallPolling: initialPolling,
+			regionalData,
+			nationalCampaignFocus: 'national' // Start with national focus
 		};
 	});
 }
@@ -110,7 +114,51 @@ function calculateInitialPolling(population: { [groupId: string]: any }): number
 		}
 	});
 
-	return totalWeight > 0 ? totalSupport / totalWeight : 5;
+	return totalWeight > 0 ? totalSupport / totalWeight : 0.5;
+}
+
+// Initialize regional campaign data
+function initializeRegionalData(playerParty: Party): { [regionId: string]: RegionalCampaignData } {
+	const regionalData: { [regionId: string]: RegionalCampaignData } = {};
+
+	DUTCH_REGIONS.forEach(region => {
+		// Calculate initial regional support based on party positions and regional profile
+		let baseSupport = 0.5; // Base 0.5% support everywhere for new party
+
+		// Adjust based on historical leaning and party positions
+		const partyLeaning = calculatePartyLeaning(playerParty);
+		if (region.politicalProfile.historicalLeaning === partyLeaning) {
+			baseSupport += 1.5; // Small boost in aligned regions
+		} else if (region.politicalProfile.historicalLeaning === 'center') {
+			baseSupport += 0.5; // Tiny boost in swing regions
+		}
+
+		// Add some randomness based on volatility
+		const volatilityFactor = (Math.random() - 0.5) * region.politicalProfile.volatility * 0.2;
+		baseSupport += volatilityFactor;
+
+		regionalData[region.id] = {
+			regionId: region.id,
+			polling: Math.max(0.1, Math.min(5, baseSupport)), // Cap initial support 0.1-5%
+			awareness: 2 + Math.random() * 3, // Start with very low awareness 2-5%
+			campaignSpending: 0,
+			mediaPresence: 0.5 + Math.random() * 1.5, // Minimal initial media presence
+			localIssueStances: {}
+		};
+	});
+
+	return regionalData;
+}
+
+// Calculate party political leaning from positions
+function calculatePartyLeaning(party: Party): 'left' | 'center' | 'right' {
+	if (!party.positions || party.positions.length === 0) return 'center';
+
+	const averagePosition = party.positions.reduce((sum, pos) => sum + pos.position, 0) / party.positions.length;
+
+	if (averagePosition < -30) return 'left';
+	if (averagePosition > 30) return 'right';
+	return 'center';
 }
 
 // Create a campaign video
@@ -177,6 +225,90 @@ export function createCampaignVideo(video: Omit<CampaignVideo, 'id' | 'createdOn
 	});
 }
 
+// Conduct regional campaign activity
+export function conductRegionalCampaign(regionId: string, activityType: 'rally' | 'media' | 'ground', budget: number) {
+	gameStore.update(state => {
+		if (!state || !state.regionalData || !state.regionalData[regionId]) return state;
+
+		const region = DUTCH_REGIONS.find(r => r.id === regionId);
+		if (!region) return state;
+
+		const currentRegionalData = state.regionalData[regionId];
+		const effectiveness = calculateRegionalCampaignEffectiveness(activityType, budget, region, currentRegionalData);
+
+		// Update regional data
+		const updatedRegionalData = {
+			...currentRegionalData,
+			campaignSpending: currentRegionalData.campaignSpending + budget,
+			lastActivity: state.currentDay || 1,
+			polling: Math.min(100, currentRegionalData.polling + effectiveness.pollingBoost),
+			awareness: Math.min(100, currentRegionalData.awareness + effectiveness.awarenessBoost),
+			mediaPresence: Math.min(100, currentRegionalData.mediaPresence + effectiveness.mediaBoost)
+		};
+
+		// Calculate new overall polling
+		const newOverallPolling = calculateOverallPollingFromRegions({
+			...state.regionalData,
+			[regionId]: updatedRegionalData
+		});
+
+		return {
+			...state,
+			regionalData: {
+				...state.regionalData,
+				[regionId]: updatedRegionalData
+			},
+			overallPolling: newOverallPolling,
+			campaignBudget: (state.campaignBudget || 0) - budget
+		};
+	});
+}
+
+// Calculate regional campaign effectiveness
+function calculateRegionalCampaignEffectiveness(
+	activityType: 'rally' | 'media' | 'ground',
+	budget: number,
+	region: any,
+	currentData: RegionalCampaignData
+) {
+	let baseEffectiveness = Math.sqrt(budget / 1000); // Diminishing returns on budget
+
+	// Activity type modifiers
+	const modifiers = {
+		rally: { polling: 1.2, awareness: 1.5, media: 0.8 },
+		media: { polling: 0.8, awareness: 1.0, media: 1.8 },
+		ground: { polling: 1.5, awareness: 1.2, media: 0.5 }
+	};
+
+	const modifier = modifiers[activityType];
+
+	// Regional factors
+	const populationFactor = Math.log(region.population / 100000) / 5; // Larger regions are harder
+	const volatilityFactor = region.politicalProfile.volatility / 100; // More volatile = more responsive
+
+	return {
+		pollingBoost: baseEffectiveness * modifier.polling * (1 + volatilityFactor - populationFactor),
+		awarenessBoost: baseEffectiveness * modifier.awareness * (1 + volatilityFactor),
+		mediaBoost: baseEffectiveness * modifier.media
+	};
+}
+
+// Calculate overall polling from regional data
+function calculateOverallPollingFromRegions(regionalData: { [regionId: string]: RegionalCampaignData }): number {
+	let totalSupport = 0;
+	let totalWeight = 0;
+
+	DUTCH_REGIONS.forEach(region => {
+		const data = regionalData[region.id];
+		if (data) {
+			totalSupport += data.polling * region.electoralWeight;
+			totalWeight += region.electoralWeight;
+		}
+	});
+
+	return totalWeight > 0 ? totalSupport / totalWeight : 0.5;
+}
+
 // Advance campaign day
 export function advanceCampaignDay() {
 	gameStore.update(state => {
@@ -185,10 +317,53 @@ export function advanceCampaignDay() {
 		const newDay = (state.currentDay || 1) + 1;
 		const daysRemaining = (state.daysUntilElection || 60) - newDay + 1;
 
+		// Apply daily polling dynamics
+		const updatedPopulation = state.population ? { ...state.population } : {};
+		const updatedRegionalData = state.regionalData ? { ...state.regionalData } : {};
+
+		// Natural polling drift and decay mechanics
+		DUTCH_DEMOGRAPHICS.forEach(group => {
+			const segment = updatedPopulation[group.id];
+			if (segment) {
+				// Small natural drift based on volatility
+				const naturalDrift = (Math.random() - 0.5) * group.volatility * 0.1;
+				segment.currentSupport = Math.max(0.05, segment.currentSupport + naturalDrift);
+
+				// Awareness decay if no campaign activity
+				segment.awareness = Math.max(0.1, segment.awareness * 0.985);
+			}
+		});
+
+		// Regional polling dynamics
+		Object.keys(updatedRegionalData).forEach(regionId => {
+			const data = updatedRegionalData[regionId];
+			const daysSinceActivity = newDay - (data.lastActivity || 0);
+
+			// Natural regional polling drift
+			const region = DUTCH_REGIONS.find(r => r.id === regionId);
+			if (region) {
+				const naturalDrift = (Math.random() - 0.5) * region.politicalProfile.volatility * 0.05;
+				data.polling = Math.max(0.05, data.polling + naturalDrift);
+			}
+
+			if (daysSinceActivity > 3) {
+				// Gradual awareness and support decay after 3 days of no activity
+				data.awareness = Math.max(0.5, data.awareness * 0.97);
+				data.mediaPresence = Math.max(0.1, data.mediaPresence * 0.92);
+				data.polling = Math.max(0.05, data.polling * 0.995); // Slow support decay
+			}
+		});
+
+		// Recalculate overall polling from updated data
+		const newOverallPolling = calculateOverallPollingFromRegions(updatedRegionalData);
+
 		return {
 			...state,
 			currentDay: newDay,
-			daysUntilElection: daysRemaining > 0 ? state.daysUntilElection : 0
+			daysUntilElection: daysRemaining > 0 ? state.daysUntilElection : 0,
+			population: updatedPopulation,
+			regionalData: updatedRegionalData,
+			overallPolling: newOverallPolling
 		};
 	});
 }

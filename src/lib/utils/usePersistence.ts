@@ -1,25 +1,30 @@
 // Dynamic imports for Tauri APIs to handle web/native environments
 async function getTauriAPIs() {
+	// Check if we're in a browser environment first
+	if (typeof window === 'undefined') {
+		console.log('Tauri APIs not available, persistence features disabled (SSR)');
+		return null;
+	}
+
+	// Check if Tauri is available
+	if (!(window as any).__TAURI__) {
+		console.log('Tauri APIs not available, persistence features disabled (web mode)');
+		return null;
+	}
+
 	try {
-		// Check if we're in a Tauri environment first
-		if (typeof window !== 'undefined' && !(window as any).__TAURI__) {
-			console.log('Tauri APIs not available, persistence features disabled');
-			return null;
-		}
-
-		// Use dynamic import with variable to prevent Vite from resolving at build time
-		const tauriFs = '@tauri-apps/api/fs';
-		const tauriPath = '@tauri-apps/api/path';
-
-		const fs = await import(/* @vite-ignore */ tauriFs);
-		const path = await import(/* @vite-ignore */ tauriPath);
+		// Use dynamic import only when we know Tauri is available
+		const [fs, path] = await Promise.all([
+			(window as any).__TAURI__.fs || import('@tauri-apps/api/fs'),
+			(window as any).__TAURI__.path || import('@tauri-apps/api/path')
+		]);
 
 		return {
-			writeTextFile: fs.writeTextFile,
-			readTextFile: fs.readTextFile,
-			exists: fs.exists,
-			createDir: fs.createDir,
-			appDataDir: path.appDataDir
+			writeTextFile: fs.writeTextFile || fs.default?.writeTextFile,
+			readTextFile: fs.readTextFile || fs.default?.readTextFile,
+			exists: fs.exists || fs.default?.exists,
+			createDir: fs.createDir || fs.default?.createDir,
+			appDataDir: path.appDataDir || path.default?.appDataDir
 		};
 	} catch (error) {
 		console.log('Tauri APIs not available, persistence features disabled');

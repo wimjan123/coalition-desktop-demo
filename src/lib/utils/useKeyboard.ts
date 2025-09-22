@@ -8,7 +8,7 @@ import { perfMonitor } from './usePerformance.js';
  * Global keyboard shortcut handler for desktop environment
  */
 export function setupKeyboardShortcuts() {
-	function handleKeydown(event: KeyboardEvent) {
+	async function handleKeydown(event: KeyboardEvent) {
 		// Check for Command key on macOS or Ctrl on other platforms
 		const modifier = event.metaKey || event.ctrlKey;
 

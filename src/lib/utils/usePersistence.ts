@@ -1,5 +1,20 @@
-import { writeTextFile, readTextFile, exists, createDir } from '@tauri-apps/api/fs';
-import { appDataDir } from '@tauri-apps/api/path';
+// Dynamic imports for Tauri APIs to handle web/native environments
+async function getTauriAPIs() {
+	try {
+		const fs = await import('@tauri-apps/api/fs');
+		const path = await import('@tauri-apps/api/path');
+		return {
+			writeTextFile: fs.writeTextFile,
+			readTextFile: fs.readTextFile,
+			exists: fs.exists,
+			createDir: fs.createDir,
+			appDataDir: path.appDataDir
+		};
+	} catch (error) {
+		console.log('Tauri APIs not available, persistence features disabled');
+		return null;
+	}
+}
 import { get } from 'svelte/store';
 import { windowsStore, desktopStore } from '../stores/stores.js';
 import type { WindowData } from '../types/window.js';
@@ -23,21 +38,28 @@ const LAYOUT_FILENAME = 'desktop-layout.json';
 /**
  * Get the full path to the layout file
  */
-async function getLayoutPath(): Promise<string> {
-	const appData = await appDataDir();
+async function getLayoutPath(): Promise<string | null> {
+	const apis = await getTauriAPIs();
+	if (!apis) return null;
+
+	const appData = await apis.appDataDir();
 	return `${appData}coalition-desktop/${LAYOUT_FILENAME}`;
 }
 
 /**
  * Ensure the app data directory exists
  */
-async function ensureAppDataDir(): Promise<void> {
-	const appData = await appDataDir();
+async function ensureAppDataDir(): Promise<boolean> {
+	const apis = await getTauriAPIs();
+	if (!apis) return false;
+
+	const appData = await apis.appDataDir();
 	const appDir = `${appData}coalition-desktop`;
 
-	if (!(await exists(appDir))) {
-		await createDir(appDir, { recursive: true });
+	if (!(await apis.exists(appDir))) {
+		await apis.createDir(appDir, { recursive: true });
 	}
+	return true;
 }
 
 /**
@@ -45,7 +67,16 @@ async function ensureAppDataDir(): Promise<void> {
  */
 export async function saveLayout(): Promise<void> {
 	try {
-		await ensureAppDataDir();
+		const apis = await getTauriAPIs();
+		if (!apis) {
+			console.log('Persistence not available in web mode');
+			return;
+		}
+
+		const dirCreated = await ensureAppDataDir();
+		if (!dirCreated) {
+			throw new Error('Failed to create app data directory');
+		}
 
 		const windows = get(windowsStore);
 		const desktop = get(desktopStore);
@@ -65,7 +96,11 @@ export async function saveLayout(): Promise<void> {
 		};
 
 		const layoutPath = await getLayoutPath();
-		await writeTextFile(layoutPath, JSON.stringify(layout, null, 2));
+		if (!layoutPath) {
+			throw new Error('Failed to get layout path');
+		}
+
+		await apis.writeTextFile(layoutPath, JSON.stringify(layout, null, 2));
 
 		console.log('Desktop layout saved successfully');
 	} catch (error) {
@@ -79,14 +114,21 @@ export async function saveLayout(): Promise<void> {
  */
 export async function loadLayout(): Promise<DesktopLayout | null> {
 	try {
-		const layoutPath = await getLayoutPath();
+		const apis = await getTauriAPIs();
+		if (!apis) {
+			console.log('Persistence not available in web mode');
+			return null;
+		}
 
-		if (!(await exists(layoutPath))) {
+		const layoutPath = await getLayoutPath();
+		if (!layoutPath) return null;
+
+		if (!(await apis.exists(layoutPath))) {
 			console.log('No saved layout found');
 			return null;
 		}
 
-		const content = await readTextFile(layoutPath);
+		const content = await apis.readTextFile(layoutPath);
 		const layout: DesktopLayout = JSON.parse(content);
 
 		// Validate layout version

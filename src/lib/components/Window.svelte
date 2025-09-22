@@ -89,7 +89,7 @@
 				<button
 					class="control-btn maximize"
 					on:click={handleMaximize}
-					aria-label={windowData.maximized ? 'Restore' : 'Maximize'} {windowData.title}
+					aria-label="{windowData.maximized ? 'Restore' : 'Maximize'} {windowData.title}"
 				>
 					{windowData.maximized ? '⧉' : '□'}
 				</button>

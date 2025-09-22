@@ -4,8 +4,10 @@
 	import Toasts from './Toasts.svelte';
 	import Window from './Window.svelte';
 	import CharacterCreation from './CharacterCreation.svelte';
+	import CampaignIntro from './CampaignIntro.svelte';
+	import CampaignDashboard from './CampaignDashboard.svelte';
 	import { windowsStore } from '../stores/stores.js';
-	import { isGameInitialized, initializeNewGame, loadGameFromLocal } from '../stores/gameStore.js';
+	import { isGameInitialized, initializeNewGame, loadGameFromLocal, gameStore, startCampaign } from '../stores/gameStore.js';
 	import { setupKeyboardShortcuts } from '../utils/useKeyboard.js';
 	import { restoreLayout, setupAutoSave, saveLayout } from '../utils/usePersistence.js';
 	import type { PlayerCharacter, Party } from '../types/game.js';
@@ -76,6 +78,11 @@
 		console.log('Game initialized with new character and party');
 	}
 
+	function handleCampaignStart() {
+		startCampaign();
+		console.log('Campaign started');
+	}
+
 	onDestroy(async () => {
 		// Save layout before component destruction
 		try {
@@ -99,17 +106,25 @@
 
 <div class="desktop" bind:this={desktopEl}>
 	{#if $isGameInitialized}
-		<!-- Game is running - show desktop environment -->
-		<!-- Windows will be rendered here -->
-		{#each $windowsStore as windowData (windowData.id)}
-			<Window bind:windowData />
-		{/each}
+		{#if $gameStore?.currentPhase === 'campaign-intro'}
+			<!-- Campaign introduction overlay -->
+			<CampaignIntro on:start={handleCampaignStart} />
+		{:else if $gameStore?.currentPhase === 'campaign'}
+			<!-- Campaign phase - show campaign dashboard -->
+			<CampaignDashboard />
+		{:else}
+			<!-- Other phases - show desktop environment -->
+			<!-- Windows will be rendered here -->
+			{#each $windowsStore as windowData (windowData.id)}
+				<Window bind:windowData />
+			{/each}
 
-		<!-- Dock at the bottom -->
-		<Dock />
+			<!-- Dock at the bottom -->
+			<Dock />
 
-		<!-- Toast notifications -->
-		<Toasts />
+			<!-- Toast notifications -->
+			<Toasts />
+		{/if}
 	{:else}
 		<!-- No game initialized - show character creation -->
 		<div class="character-creation-overlay">

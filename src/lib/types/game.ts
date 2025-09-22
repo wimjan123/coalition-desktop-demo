@@ -36,13 +36,35 @@ export interface PlayerCharacter {
 	negotiation: number; // 1-10
 }
 
+export interface CampaignVideo {
+	id: string;
+	title: string;
+	selectedIssues: string[]; // Issue IDs
+	positions: { [issueId: string]: number }; // -100 to 100
+	tone: 'aggressive' | 'moderate' | 'empathetic';
+	createdOn: number; // Day number
+	effectiveness: number; // 0-100 calculated score
+}
+
 export interface GameState {
 	player: PlayerCharacter;
 	playerParty: Party;
-	currentPhase: 'character-creation' | 'campaign' | 'coalition' | 'governance';
+	currentPhase: 'character-creation' | 'campaign-intro' | 'campaign' | 'coalition' | 'governance';
 	gameDate: Date;
 	difficulty: 'easy' | 'normal' | 'hard';
 	isFirstTime: boolean;
+	daysUntilElection?: number;
+	currentCrisis?: {
+		headline: string;
+		description: string;
+		trigger: string;
+	};
+	// Campaign data
+	population?: { [groupId: string]: import('./population.js').PopulationSegment };
+	campaignVideos?: CampaignVideo[];
+	currentDay?: number; // Days since campaign started
+	campaignBudget?: number;
+	overallPolling?: number; // 0-100 overall support
 }
 
 // Dutch political issues for the game

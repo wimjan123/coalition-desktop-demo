@@ -32,10 +32,28 @@
 
 	// Computed stats based on background and traits
 	$: stats = {
-		charisma: 5 + (selectedBackground.bonuses?.charisma || 0) + (selectedTraits.includes('charismatic') ? 1 : 0),
-		integrity: 5 + (selectedBackground.bonuses?.integrity || 0) + (selectedTraits.includes('principled') ? 1 : 0),
-		negotiation: 5 + (selectedBackground.bonuses?.negotiation || 0) + (selectedTraits.includes('diplomatic') ? 1 : 0),
-		experience: (selectedBackground.bonuses?.experience || 0) + (selectedTraits.includes('strategic') ? 5 : 0)
+		charisma: 5 + (selectedBackground.bonuses?.charisma || 0) +
+			(selectedTraits.includes('charismatic') ? 2 : 0) +
+			(selectedTraits.includes('empathetic') ? 1 : 0) +
+			(selectedTraits.includes('populist') ? 1 : 0) +
+			(selectedTraits.includes('bold') ? 1 : 0),
+		integrity: 5 + (selectedBackground.bonuses?.integrity || 0) +
+			(selectedTraits.includes('principled') ? 2 : 0) +
+			(selectedTraits.includes('honest') ? 2 : 0) +
+			(selectedTraits.includes('idealistic') ? 1 : 0) +
+			(selectedTraits.includes('patient') ? 1 : 0),
+		negotiation: 5 + (selectedBackground.bonuses?.negotiation || 0) +
+			(selectedTraits.includes('diplomatic') ? 2 : 0) +
+			(selectedTraits.includes('strategic') ? 1 : 0) +
+			(selectedTraits.includes('calculating') ? 1 : 0) +
+			(selectedTraits.includes('pragmatic') ? 1 : 0) +
+			(selectedTraits.includes('cautious') ? 1 : 0),
+		experience: (selectedBackground.bonuses?.experience || 0) +
+			(selectedTraits.includes('analytical') ? 3 : 0) +
+			(selectedTraits.includes('ambitious') ? 2 : 0) +
+			(selectedTraits.includes('aggressive') ? 2 : 0) +
+			(selectedTraits.includes('elitist') ? 2 : 0) +
+			(selectedTraits.includes('impulsive') ? -2 : 0)
 	};
 
 	// Reactive validation - triggers whenever form values change
@@ -140,7 +158,6 @@
 		<div class="window-title">COALITION - Character Creation</div>
 		<div class="step-indicator">
 			Step {currentStep} of {totalSteps}
-			{#if !canProceedToNextStep}<span style="color: red;">❌</span>{:else}<span style="color: green;">✅</span>{/if}
 		</div>
 	</div>
 
@@ -165,9 +182,6 @@
 						placeholder="Enter your character's name"
 						maxlength="50"
 					/>
-					<small style="color: #6b7280;">
-						Debug: "{characterName}" (length: {characterName.trim().length}, age: {characterAge})
-					</small>
 				</div>
 
 				<div class="form-group">

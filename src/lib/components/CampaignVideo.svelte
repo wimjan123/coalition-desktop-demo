@@ -49,7 +49,7 @@
 			tone
 		};
 
-		createCampaignVideo(video);
+		createCampaignVideo(video, videoCost);
 		dispatch('videoCreated');
 	}
 
@@ -73,11 +73,17 @@
 		return '#1e40af';
 	}
 
+	// Calculate video cost based on tone and number of issues
+	$: videoCost = (() => {
+		const baseCost = 8000; // Base cost for campaign video production
+		const issueMultiplier = selectedIssues.length * 500; // Additional cost per issue covered
+		const toneMultiplier = tone === 'aggressive' ? 1.2 : tone === 'empathetic' ? 1.1 : 1.0; // Professional tone is standard
+		return Math.round((baseCost + issueMultiplier) * toneMultiplier);
+	})();
+
 	$: canCreateVideo = videoTitle.trim().length > 0 &&
 					   selectedIssues.length > 0 &&
-					   campaignBudget >= 10000;
-
-	$: videoCost = 10000;
+					   campaignBudget >= videoCost;
 </script>
 
 <div class="video-creator-overlay">
@@ -204,8 +210,8 @@
 						{#if selectedIssues.length === 0}
 							<p class="error">⚠️ Please select at least one issue</p>
 						{/if}
-						{#if campaignBudget < 10000}
-							<p class="error">⚠️ Insufficient budget (need €10,000)</p>
+						{#if campaignBudget < videoCost}
+							<p class="error">⚠️ Insufficient budget (need €{videoCost.toLocaleString()})</p>
 						{/if}
 					</div>
 				{/if}

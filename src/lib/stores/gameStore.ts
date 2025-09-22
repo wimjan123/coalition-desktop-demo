@@ -86,6 +86,12 @@ export function startCampaign() {
 		const initialPolling = calculateInitialPolling(population);
 		const regionalData = initializeRegionalData(state.playerParty);
 
+		// Calculate starting budget based on difficulty and party characteristics
+		const baseBudget = 75000; // Realistic starting budget for new Dutch political party
+		const difficultyMultiplier = state.difficulty === 'easy' ? 1.5 : state.difficulty === 'hard' ? 0.7 : 1.0;
+		const experienceBonus = (state.player.experience / 10) * 0.2; // 0-20% bonus based on experience
+		const startingBudget = Math.round(baseBudget * difficultyMultiplier * (1 + experienceBonus));
+
 		return {
 			...state,
 			currentPhase: 'campaign',
@@ -93,7 +99,7 @@ export function startCampaign() {
 			population,
 			campaignVideos: [],
 			currentDay: 1,
-			campaignBudget: 100000, // Starting budget
+			campaignBudget: startingBudget,
 			overallPolling: initialPolling,
 			regionalData,
 			nationalCampaignFocus: 'national' // Start with national focus
@@ -162,7 +168,7 @@ function calculatePartyLeaning(party: Party): 'left' | 'center' | 'right' {
 }
 
 // Create a campaign video
-export function createCampaignVideo(video: Omit<CampaignVideo, 'id' | 'createdOn' | 'effectiveness'>) {
+export function createCampaignVideo(video: Omit<CampaignVideo, 'id' | 'createdOn' | 'effectiveness'>, cost: number) {
 	gameStore.update(state => {
 		if (!state || !state.population) return state;
 
@@ -220,7 +226,7 @@ export function createCampaignVideo(video: Omit<CampaignVideo, 'id' | 'createdOn
 			...state,
 			campaignVideos: [...(state.campaignVideos || []), newVideo],
 			overallPolling: newPolling,
-			campaignBudget: (state.campaignBudget || 0) - 10000 // Cost per video
+			campaignBudget: (state.campaignBudget || 0) - cost // Dynamic video cost
 		};
 	});
 }

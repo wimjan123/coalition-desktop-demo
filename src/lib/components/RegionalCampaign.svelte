@@ -7,36 +7,39 @@
 
 	let selectedRegion: string = '';
 	let selectedActivity: 'rally' | 'media' | 'ground' = 'rally';
-	let budget: number = 5000;
+	let budget: number = 4000; // Default budget, will be adjusted based on selected activity
 
 	$: gameState = $gameStore;
 	$: regionalData = gameState?.regionalData || {};
 	$: campaignBudget = gameState?.campaignBudget || 0;
 
-	// Activity options with descriptions and costs
-	const activities = [
+	// Calculate dynamic activity costs based on selected region
+	$: selectedRegionData = DUTCH_REGIONS.find(r => r.id === selectedRegion);
+
+	// Activity options with descriptions and dynamic costs
+	$: activities = [
 		{
 			id: 'rally' as const,
 			name: '🎪 Political Rally',
 			description: 'Organize a public rally to boost support and awareness',
-			minCost: 3000,
-			maxCost: 15000,
+			minCost: selectedRegionData ? Math.round(2500 * (selectedRegionData.population / 1000000)) : 2500,
+			maxCost: selectedRegionData ? Math.round(12000 * (selectedRegionData.population / 1000000)) : 12000,
 			effects: 'High awareness boost, good support boost, low media impact'
 		},
 		{
 			id: 'media' as const,
 			name: '📺 Media Campaign',
 			description: 'Targeted TV ads and media appearances in the region',
-			minCost: 5000,
-			maxCost: 25000,
+			minCost: selectedRegionData ? Math.round(4000 * (selectedRegionData.population / 1000000)) : 4000,
+			maxCost: selectedRegionData ? Math.round(20000 * (selectedRegionData.population / 1000000)) : 20000,
 			effects: 'Excellent media coverage, moderate awareness, good support'
 		},
 		{
 			id: 'ground' as const,
 			name: '🚪 Ground Campaign',
 			description: 'Door-to-door canvassing and local grassroots organizing',
-			minCost: 2000,
-			maxCost: 10000,
+			minCost: selectedRegionData ? Math.round(1500 * (selectedRegionData.population / 1000000)) : 1500,
+			maxCost: selectedRegionData ? Math.round(8000 * (selectedRegionData.population / 1000000)) : 8000,
 			effects: 'Excellent support boost, good awareness, minimal media'
 		}
 	];
@@ -52,7 +55,7 @@
 
 		// Reset form
 		selectedRegion = '';
-		budget = 5000;
+		budget = 4000;
 
 		dispatch('campaignConducted');
 	}

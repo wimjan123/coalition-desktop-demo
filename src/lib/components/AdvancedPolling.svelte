@@ -266,10 +266,10 @@
 		<div class="modal-header">
 			<div class="header-content">
 				<div class="analyst-info">
-					<span class="analyst-avatar">👨‍💼</span>
+					<span class="analyst-avatar">📊</span>
 					<div class="analyst-details">
-						<h2>Maurit de Kat</h2>
-						<p class="analyst-title">Senior Political Analyst • NOS/RTL</p>
+						<h2>Polling Analysis</h2>
+						<p class="analyst-title">Campaign Intelligence Dashboard</p>
 					</div>
 				</div>
 				<button class="close-btn" on:click={closeModal}>×</button>
@@ -413,9 +413,9 @@
 									{/if}
 								</p>
 								<p>
-									"The {demographicPolling[0]?.name || 'Unknown'} demographic shows the most promise,
+									<strong>Strategic Focus:</strong> The {demographicPolling[0]?.name || 'Unknown'} demographic shows the most promise,
 									while {issuePolling[0]?.name || 'key issues'} could be your strongest platform.
-									Regional focus should be on {regionalPolling[0]?.name || 'competitive areas'}."
+									Regional focus should be on {regionalPolling[0]?.name || 'competitive areas'}.
 								</p>
 							</div>
 						</div>

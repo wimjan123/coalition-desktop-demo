@@ -14,9 +14,11 @@ async function getTauriAPIs() {
 
 	try {
 		// Use dynamic import only when we know Tauri is available
+		// Construct import paths dynamically to avoid Vite static analysis
+		const tauriApi = '@tauri-apps/api';
 		const [fs, path] = await Promise.all([
-			(window as any).__TAURI__.fs || import('@tauri-apps/api/fs'),
-			(window as any).__TAURI__.path || import('@tauri-apps/api/path')
+			(window as any).__TAURI__.fs || import(`${tauriApi}/fs`),
+			(window as any).__TAURI__.path || import(`${tauriApi}/path`)
 		]);
 
 		return {

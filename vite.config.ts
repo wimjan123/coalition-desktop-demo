@@ -3,10 +3,19 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [sveltekit()],
-	optimizeDeps: {
-		exclude: ['@tauri-apps/api/fs', '@tauri-apps/api/path']
+	define: {
+		// Prevent Vite from trying to analyze Tauri imports in development
+		__TAURI_AVAILABLE__: false
 	},
-	ssr: {
-		noExternal: ['@tauri-apps/api/fs', '@tauri-apps/api/path']
+	optimizeDeps: {
+		exclude: ['@tauri-apps/api', '@tauri-apps/api/fs', '@tauri-apps/api/path']
+	},
+	build: {
+		rollupOptions: {
+			external: (id) => {
+				// Make Tauri APIs external in all environments except Tauri builds
+				return id.startsWith('@tauri-apps/api');
+			}
+		}
 	}
 });

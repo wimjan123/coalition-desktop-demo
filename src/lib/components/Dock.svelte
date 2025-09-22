@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createWindow } from '../utils/window-manager.js';
+	import { clearGameState } from '../stores/gameStore.js';
 
 	const apps = [
 		{ id: 'mail', name: 'Mail', icon: '📧', appType: 'mail' },
@@ -8,18 +9,26 @@
 		{ id: 'calendar', name: 'Calendar', icon: '📅', appType: 'calendar' },
 		{ id: 'cabinet', name: 'Cabinet', icon: '🗄️', appType: 'cabinet' },
 		{ id: 'policy', name: 'Policy', icon: '📋', appType: 'policy' },
-		{ id: 'media', name: 'Media', icon: '📺', appType: 'media' }
+		{ id: 'media', name: 'Media', icon: '📺', appType: 'media' },
+		{ id: 'newgame', name: 'New Game', icon: '🎮', appType: 'newgame' }
 	];
 
 	function launchApp(app: typeof apps[0]) {
-		createWindow({
-			title: app.name,
-			appType: app.appType,
-			width: 600,
-			height: 400,
-			x: Math.random() * 300 + 100,
-			y: Math.random() * 200 + 100
-		});
+		if (app.appType === 'newgame') {
+			// Special case: Start new game (clear game state to show character creation)
+			if (confirm('Are you sure you want to start a new game? This will delete your current progress.')) {
+				clearGameState();
+			}
+		} else {
+			createWindow({
+				title: app.name,
+				appType: app.appType,
+				width: 600,
+				height: 400,
+				x: Math.random() * 300 + 100,
+				y: Math.random() * 200 + 100
+			});
+		}
 	}
 </script>
 

@@ -358,10 +358,10 @@ export function generateNewsEvent(template: NewsEventTemplate, variables: any = 
 			stance: 'neutral' as const,
 			timeRequired: getTimeForResponseType(rt.type),
 			pollingImpact: calculatePollingImpact(rt.basePollingImpact, rt.demographicMultipliers),
-			trustImpact: rt.type === 'ignore' ? -2 : Math.floor(Math.random() * 3) - 1,
-			mediaImpact: rt.type === 'press-conference' ? 3 : Math.floor(Math.random() * 3),
+			trustImpact: calculateTrustImpact(rt.type, rt.tone),
+			mediaImpact: calculateMediaImpact(rt.type, template.urgency),
 			partyStatsImpact: {},
-			backfireChance: Math.floor(Math.random() * 20),
+			backfireChance: calculateBackfireChance(rt.type, rt.tone, template.urgency),
 			requiredTraits: rt.requiredTraits,
 			requiredStats: rt.minimumStats
 		})),
@@ -370,7 +370,7 @@ export function generateNewsEvent(template: NewsEventTemplate, variables: any = 
 		basePollingImpact: -1,
 		demographicMultipliers: { 'all': 1.0 },
 		mediaAttention: template.urgency === 'crisis' ? 90 : template.urgency === 'high' ? 70 : 50,
-		socialMediaViral: Math.random() < 0.3
+		socialMediaViral: calculateViralPotential(template.category, template.urgency)
 	};
 }
 
@@ -421,4 +421,124 @@ function calculatePollingImpact(baseImpact: number, multipliers: any): any {
 	});
 
 	return result;
+}
+
+// Realistic Dutch political communication impact calculations
+function calculateTrustImpact(responseType: string, tone: string): number {
+	// Based on Dutch political communication research
+	const baseTrustImpact = {
+		'ignore': -3, // Ignoring issues hurts trust
+		'tweet': -1, // Social media responses seen as less serious
+		'statement': 0, // Neutral impact
+		'interview': 1, // Personal communication builds trust
+		'talkshow': 1, // TV appearances build visibility and trust
+		'press-conference': 2, // Official communication builds trust
+		'policy-proposal': 3, // Concrete proposals build most trust
+		'private-meeting': 1 // Behind-scenes work appreciated
+	};
+
+	const toneMultiplier = {
+		'aggressive': 0.7, // Aggressive tone can backfire
+		'defensive': 0.8, // Defensive responses seem weak
+		'empathetic': 1.3, // Dutch voters value empathy
+		'analytical': 1.1, // Thoughtful analysis appreciated
+		'dismissive': 0.5, // Dismissive tone hurts trust
+		'diplomatic': 1.2 // Diplomatic tone builds trust
+	};
+
+	const base = baseTrustImpact[responseType] || 0;
+	const multiplier = toneMultiplier[tone] || 1.0;
+
+	return Math.round(base * multiplier);
+}
+
+function calculateMediaImpact(responseType: string, urgency: string): number {
+	// Media attention based on response type and event urgency
+	const baseMediaImpact = {
+		'ignore': -2, // Media notes lack of response
+		'tweet': 1, // Limited media pickup
+		'statement': 2, // Standard media coverage
+		'interview': 3, // Good media coverage
+		'talkshow': 4, // High visibility
+		'press-conference': 5, // Maximum media attention
+		'policy-proposal': 3, // Policy focus gets coverage
+		'private-meeting': 0 // No immediate media impact
+	};
+
+	const urgencyMultiplier = {
+		'low': 0.8,
+		'medium': 1.0,
+		'high': 1.3,
+		'crisis': 1.6
+	};
+
+	const base = baseMediaImpact[responseType] || 1;
+	const multiplier = urgencyMultiplier[urgency] || 1.0;
+
+	return Math.round(base * multiplier);
+}
+
+function calculateBackfireChance(responseType: string, tone: string, urgency: string): number {
+	// Backfire risk based on Dutch political communication patterns
+	const baseBackfireChance = {
+		'ignore': 25, // High risk of backlash for ignoring
+		'tweet': 15, // Social media can be misinterpreted
+		'statement': 8, // Written statements safer
+		'interview': 12, // Live interviews have risk
+		'talkshow': 18, // TV appearances can go wrong
+		'press-conference': 10, // Controlled environment
+		'policy-proposal': 5, // Concrete proposals least risky
+		'private-meeting': 3 // Private meetings safest
+	};
+
+	const toneRisk = {
+		'aggressive': 1.5, // Aggressive tone increases risk
+		'defensive': 1.3, // Defensive responses risky
+		'empathetic': 0.7, // Empathy reduces risk
+		'analytical': 0.8, // Thoughtful responses safer
+		'dismissive': 1.8, // Dismissive tone very risky
+		'diplomatic': 0.6 // Diplomatic tone safest
+	};
+
+	const urgencyRisk = {
+		'low': 0.8, // Less pressure
+		'medium': 1.0, // Normal risk
+		'high': 1.2, // Higher stakes
+		'crisis': 1.5 // Maximum pressure
+	};
+
+	const base = baseBackfireChance[responseType] || 10;
+	const toneMultiplier = toneRisk[tone] || 1.0;
+	const urgencyMultiplier = urgencyRisk[urgency] || 1.0;
+
+	return Math.min(45, Math.round(base * toneMultiplier * urgencyMultiplier));
+}
+
+function calculateViralPotential(category: string, urgency: string): boolean {
+	// Viral potential based on content type and urgency
+	const categoryViralChance = {
+		'economy': 0.15, // Economic news less viral
+		'immigration': 0.35, // Immigration highly divisive/viral
+		'climate': 0.25, // Climate issues moderately viral
+		'healthcare': 0.20, // Healthcare concerns moderate viral
+		'housing': 0.30, // Housing crisis very relevant
+		'education': 0.18, // Education moderate interest
+		'eu': 0.22, // EU topics moderate viral
+		'security': 0.28, // Security issues get attention
+		'scandal': 0.45, // Scandals highly viral
+		'coalition': 0.25 // Political drama moderate viral
+	};
+
+	const urgencyMultiplier = {
+		'low': 0.5,
+		'medium': 1.0,
+		'high': 1.5,
+		'crisis': 2.0
+	};
+
+	const baseChance = categoryViralChance[category] || 0.2;
+	const multiplier = urgencyMultiplier[urgency] || 1.0;
+	const finalChance = Math.min(0.8, baseChance * multiplier);
+
+	return Math.random() < finalChance;
 }

@@ -3144,83 +3144,84 @@
 			{#if true}
 				{@const rating = getOverallInterviewRating()}
 				<div class="performance-report">
-				<h3>📊 Interview Performance</h3>
+					<h3>📊 Interview Performance</h3>
 
-				<div class="overall-rating">
-					<div class="grade-circle grade-{rating.grade.toLowerCase().replace('+', 'plus')}">
-						{rating.grade}
-					</div>
-					<div class="rating-details">
-						<div class="score">{rating.score}/100</div>
-						<div class="description">{rating.description}</div>
-					</div>
-				</div>
-
-				<div class="performance-metrics">
-					<div class="metric">
-						<div class="metric-label">Consistency</div>
-						<div class="metric-bar">
-							<div class="metric-fill" style="width: {consistencyScore}%; background-color: {consistencyScore >= 70 ? '#10b981' : consistencyScore >= 50 ? '#f59e0b' : '#ef4444'}"></div>
+					<div class="overall-rating">
+						<div class="grade-circle grade-{rating.grade.toLowerCase().replace('+', 'plus')}">
+							{rating.grade}
 						</div>
-						<div class="metric-value">{consistencyScore}%</div>
-					</div>
-
-					<div class="metric">
-						<div class="metric-label">Confidence</div>
-						<div class="metric-bar">
-							<div class="metric-fill" style="width: {confidenceScore}%; background-color: {confidenceScore >= 70 ? '#10b981' : confidenceScore >= 50 ? '#f59e0b' : '#ef4444'}"></div>
+						<div class="rating-details">
+							<div class="score">{rating.score}/100</div>
+							<div class="description">{rating.description}</div>
 						</div>
-						<div class="metric-value">{confidenceScore}%</div>
 					</div>
 
-					<div class="metric">
-						<div class="metric-label">Authenticity</div>
-						<div class="metric-bar">
-							<div class="metric-fill" style="width: {authenticityScore}%; background-color: {authenticityScore >= 70 ? '#10b981' : authenticityScore >= 50 ? '#f59e0b' : '#ef4444'}"></div>
+					<div class="performance-metrics">
+						<div class="metric">
+							<div class="metric-label">Consistency</div>
+							<div class="metric-bar">
+								<div class="metric-fill" style="width: {consistencyScore}%; background-color: {consistencyScore >= 70 ? '#10b981' : consistencyScore >= 50 ? '#f59e0b' : '#ef4444'}"></div>
+							</div>
+							<div class="metric-value">{consistencyScore}%</div>
 						</div>
-						<div class="metric-value">{authenticityScore}%</div>
-					</div>
-				</div>
 
-				<div class="tone-analysis">
-					<h4>Response Tone Pattern</h4>
-					<div class="tone-sequence">
-						{#each responseTones as tone, index}
-							<span class="tone-badge tone-{tone}" title="Question {index + 1}: {tone}">
-								{#if tone === 'aggressive'}⚡
-								{:else if tone === 'defensive'}🛡️
-								{:else if tone === 'evasive'}🔄
-								{:else if tone === 'confrontational'}⚔️
-								{:else}🤝{/if}
-							</span>
-						{/each}
+						<div class="metric">
+							<div class="metric-label">Confidence</div>
+							<div class="metric-bar">
+								<div class="metric-fill" style="width: {confidenceScore}%; background-color: {confidenceScore >= 70 ? '#10b981' : confidenceScore >= 50 ? '#f59e0b' : '#ef4444'}"></div>
+							</div>
+							<div class="metric-value">{confidenceScore}%</div>
+						</div>
+
+						<div class="metric">
+							<div class="metric-label">Authenticity</div>
+							<div class="metric-bar">
+								<div class="metric-fill" style="width: {authenticityScore}%; background-color: {authenticityScore >= 70 ? '#10b981' : authenticityScore >= 50 ? '#f59e0b' : '#ef4444'}"></div>
+							</div>
+							<div class="metric-value">{authenticityScore}%</div>
+						</div>
 					</div>
-					<p class="tone-summary">
-						Interviewer mood: {selectedScenario.interviewerTone} → {interviewerMood}
-					</p>
+
+					<div class="tone-analysis">
+						<h4>Response Tone Pattern</h4>
+						<div class="tone-sequence">
+							{#each responseTones as tone, index}
+								<span class="tone-badge tone-{tone}" title="Question {index + 1}: {tone}">
+									{#if tone === 'aggressive'}⚡
+									{:else if tone === 'defensive'}🛡️
+									{:else if tone === 'evasive'}🔄
+									{:else if tone === 'confrontational'}⚔️
+									{:else}🤝{/if}
+								</span>
+							{/each}
+						</div>
+						<p class="tone-summary">
+							Interviewer mood: {selectedScenario.interviewerTone} → {interviewerMood}
+						</p>
+					</div>
 				</div>
 			{/if}
 
 				<!-- Consistency Analysis -->
 				{#if true}
 					{@const contradictionList = getContradictionSummary()}
-				{#if contradictionList.length > 0}
-					<div class="consistency-issues">
-						<h4>⚠️ Consistency Issues Detected</h4>
-						<ul class="contradiction-list">
-							{#each contradictionList as contradiction}
-								<li class="contradiction-item">{contradiction}</li>
-							{/each}
-						</ul>
-						<p class="consistency-note">
-							These contradictions may affect your credibility with voters and coalition partners.
-						</p>
-					</div>
-				{:else}
-					<div class="consistency-success">
-						<h4>✅ Consistent Messaging</h4>
-						<p>No major contradictions detected in your responses. Your positions appear coherent and authentic.</p>
-					</div>
+					{#if contradictionList.length > 0}
+						<div class="consistency-issues">
+							<h4>⚠️ Consistency Issues Detected</h4>
+							<ul class="contradiction-list">
+								{#each contradictionList as contradiction}
+									<li class="contradiction-item">{contradiction}</li>
+								{/each}
+							</ul>
+							<p class="consistency-note">
+								These contradictions may affect your credibility with voters and coalition partners.
+							</p>
+						</div>
+					{:else}
+						<div class="consistency-success">
+							<h4>✅ Consistent Messaging</h4>
+							<p>No major contradictions detected in your responses. Your positions appear coherent and authentic.</p>
+						</div>
 				{/if}
 			</div>
 			{/if}

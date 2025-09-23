@@ -3141,8 +3141,9 @@
 			</div>
 
 			<!-- Interview Performance Report -->
-			{@const rating = getOverallInterviewRating()}
-			<div class="performance-report">
+			{#if true}
+				{@const rating = getOverallInterviewRating()}
+				<div class="performance-report">
 				<h3>📊 Interview Performance</h3>
 
 				<div class="overall-rating">
@@ -3198,9 +3199,11 @@
 						Interviewer mood: {selectedScenario.interviewerTone} → {interviewerMood}
 					</p>
 				</div>
+			{/if}
 
 				<!-- Consistency Analysis -->
-				{@const contradictionList = getContradictionSummary()}
+				{#if true}
+					{@const contradictionList = getContradictionSummary()}
 				{#if contradictionList.length > 0}
 					<div class="consistency-issues">
 						<h4>⚠️ Consistency Issues Detected</h4>
@@ -3220,6 +3223,7 @@
 					</div>
 				{/if}
 			</div>
+			{/if}
 
 			<div class="position-summary">
 				<h3>Your Political Platform</h3>

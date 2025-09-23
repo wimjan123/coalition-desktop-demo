@@ -33,7 +33,7 @@
 	let responseTimeLeft = 0;
 	let isUrgentQuestion = false;
 	let urgencyWarning = false;
-	let interviewerStatus = { mood: 'neutral', recentReaction: '', frustrationLevel: 0 };
+	let interviewerStatus = { mood: 'neutral', recentReaction: '', frustrationLevel: 0, frustrationState: null };
 
 	// Animation state for emotional reactions
 	let reactionAnimation = '';
@@ -54,6 +54,17 @@
 	let rapidFireMessage = '';
 	let rapidFireTimer: number | null = null;
 	let showRapidFireIndicator = false;
+
+	// Gotcha moment state
+	let gotchaMomentActive = false;
+	let gotchaType = '';
+	let gotchaSeverity = 'major';
+	let gotchaMessage = '';
+	let gotchaDramaticImpact = 0;
+	let gotchaConfrontationLevel = 'firm';
+	let showGotchaOverlay = false;
+	let gotchaAnimation = '';
+	let gotchaEvidence = [];
 
 	// Urgency timer
 	let urgencyInterval: number | null = null;
@@ -195,6 +206,12 @@
 		// Check for rapid-fire session metadata
 		if (action.metadata?.rapidFire) {
 			handleRapidFireAction(action);
+			return;
+		}
+
+		// Check for gotcha moment metadata
+		if (action.metadata?.gotchaMoment) {
+			handleGotchaMoment(action);
 			return;
 		}
 
@@ -479,6 +496,119 @@
 		return (rapidFireProgress / rapidFireTotal) * 100;
 	}
 
+	/**
+	 * Handle gotcha moment actions
+	 */
+	function handleGotchaMoment(action: ConversationAction) {
+		if (!action.metadata) return;
+
+		const metadata = action.metadata;
+		gotchaMomentActive = true;
+		gotchaType = metadata.gotchaType || 'direct-contradiction';
+		gotchaSeverity = metadata.gotchaSeverity || 'major';
+		gotchaMessage = action.content;
+		gotchaDramaticImpact = metadata.dramaticImpact || 75;
+		gotchaConfrontationLevel = metadata.confrontationLevel || 'firm';
+		gotchaEvidence = metadata.evidence || [];
+
+		// Show dramatic gotcha overlay for high-impact moments
+		if (gotchaDramaticImpact >= 70) {
+			showGotchaOverlay = true;
+			triggerGotchaAnimation(gotchaType, gotchaDramaticImpact);
+
+			// Auto-hide overlay after dramatic effect
+			setTimeout(() => {
+				showGotchaOverlay = false;
+				gotchaAnimation = '';
+			}, getGotchaDuration(gotchaType, gotchaDramaticImpact));
+		}
+
+		// Show interviewer reaction
+		showInterviewerReaction(action.content, 'gotcha-moment');
+
+		// Reset gotcha state after showing
+		setTimeout(() => {
+			gotchaMomentActive = false;
+		}, 5000);
+	}
+
+	/**
+	 * Trigger gotcha moment animation
+	 */
+	function triggerGotchaAnimation(type: string, impact: number) {
+		// Clear any existing animation
+		gotchaAnimation = '';
+
+		// Trigger new animation after a frame
+		requestAnimationFrame(() => {
+			const intensity = impact >= 90 ? 'devastating' : impact >= 75 ? 'high' : 'medium';
+			gotchaAnimation = `gotcha-${type}-${intensity}`;
+		});
+	}
+
+	/**
+	 * Get gotcha moment duration based on type and impact
+	 */
+	function getGotchaDuration(type: string, impact: number): number {
+		const baseDurations = {
+			'direct-contradiction': 4000,
+			'expertise-fail': 3500,
+			'policy-flip': 3500,
+			'moral-inconsistency': 4500,
+			'fact-error': 3000,
+			'evasion-pattern': 3000,
+			'false-credential': 5000,
+			'timeline-contradiction': 3200
+		};
+
+		const base = baseDurations[type as keyof typeof baseDurations] || 3500;
+		const impactMultiplier = impact >= 90 ? 1.5 : impact >= 75 ? 1.3 : 1.1;
+
+		return base * impactMultiplier;
+	}
+
+	/**
+	 * Get gotcha moment severity color
+	 */
+	function getGotchaSeverityColor(severity: string): string {
+		switch (severity) {
+			case 'minor': return 'bg-yellow-600';
+			case 'major': return 'bg-red-600';
+			case 'critical': return 'bg-red-800';
+			default: return 'bg-red-600';
+		}
+	}
+
+	/**
+	 * Get gotcha confrontation level indicator
+	 */
+	function getConfrontationLevelIcon(level: string): string {
+		switch (level) {
+			case 'gentle': return '🤔';
+			case 'firm': return '🎯';
+			case 'aggressive': return '⚡';
+			case 'devastating': return '💥';
+			default: return '🎯';
+		}
+	}
+
+	/**
+	 * Get gotcha type display name
+	 */
+	function getGotchaTypeDisplay(type: string): string {
+		const displayNames = {
+			'direct-contradiction': 'Contradiction Exposed',
+			'expertise-fail': 'Expertise Questioned',
+			'policy-flip': 'Policy Flip-Flop',
+			'moral-inconsistency': 'Moral Inconsistency',
+			'fact-error': 'Factual Error',
+			'evasion-pattern': 'Evasion Pattern',
+			'false-credential': 'False Credential',
+			'timeline-contradiction': 'Timeline Error'
+		};
+		return displayNames[type as keyof typeof displayNames] || 'Gotcha Moment';
+	}
+
 	function cleanup() {
 		stopUrgencyTimer();
 		stopRapidFireTimer();
@@ -487,6 +617,11 @@
 	// Reactive statements for UI updates
 	$: interviewerMoodClass = getMoodClass(interviewerStatus.mood);
 	$: frustrationLevel = interviewerStatus.frustrationLevel;
+	$: frustrationState = interviewerStatus.frustrationState;
+	$: currentFrustrationLevel = frustrationState?.level || 'calm';
+	$: frustrationBackgroundClass = getFrustrationBackgroundClass(currentFrustrationLevel);
+	$: frustrationQuestionClass = getFrustrationQuestionBoxClass(currentFrustrationLevel);
+	$: frustrationInterviewerClass = getFrustrationInterviewerClass(currentFrustrationLevel);
 	$: canRespond = currentQuestion && !isLoading && !isComplete;
 
 	function getMoodClass(mood: string): string {
@@ -496,7 +631,10 @@
 			'skeptical': 'text-yellow-600',
 			'frustrated': 'text-orange-600',
 			'hostile': 'text-red-600',
-			'sympathetic': 'text-green-600'
+			'sympathetic': 'text-green-600',
+			// Task 3.8: Surprise/Approval moods
+			'surprised': 'text-cyan-600',
+			'approving': 'text-emerald-600'
 		};
 		return moodClasses[mood] || 'text-gray-700';
 	}
@@ -522,7 +660,10 @@
 			'frustrated': 'bg-orange-500',
 			'hostile': 'bg-red-500',
 			'sympathetic': 'bg-green-500',
-			'excited': 'bg-purple-500'
+			'excited': 'bg-purple-500',
+			// Task 3.8: Surprise/Approval moods
+			'surprised': 'bg-cyan-500',
+			'approving': 'bg-emerald-500'
 		};
 		return moodIndicators[mood] || 'bg-gray-400';
 	}
@@ -535,7 +676,10 @@
 			'frustrated': 'bg-orange-500 opacity-50',
 			'hostile': 'bg-red-500 opacity-60',
 			'sympathetic': 'bg-green-500 opacity-40',
-			'excited': 'bg-purple-500 opacity-50'
+			'excited': 'bg-purple-500 opacity-50',
+			// Task 3.8: Surprise/Approval moods
+			'surprised': 'bg-cyan-500 opacity-45',
+			'approving': 'bg-emerald-500 opacity-45'
 		};
 		return moodPulses[mood] || 'bg-gray-400 opacity-30';
 	}
@@ -554,6 +698,57 @@
 		return 'text-green-400';
 	}
 
+	/**
+	 * Enhanced frustration level styling - Task 3.7
+	 */
+	function getFrustrationLevelClass(level: string): string {
+		const levelClasses: Record<string, string> = {
+			'calm': 'bg-gray-50 border-gray-200 text-gray-700',
+			'mildly-annoyed': 'bg-yellow-50 border-yellow-300 text-yellow-800',
+			'frustrated': 'bg-orange-50 border-orange-400 text-orange-800',
+			'very-frustrated': 'bg-red-50 border-red-500 text-red-800',
+			'losing-patience': 'bg-red-100 border-red-600 text-red-900 animate-pulse',
+			'explosive': 'bg-red-200 border-red-700 text-red-900 animate-bounce'
+		};
+		return levelClasses[level] || 'bg-gray-50 border-gray-200 text-gray-700';
+	}
+
+	function getFrustrationBackgroundClass(level: string): string {
+		const backgroundClasses: Record<string, string> = {
+			'calm': 'bg-slate-50',
+			'mildly-annoyed': 'bg-yellow-50',
+			'frustrated': 'bg-orange-50',
+			'very-frustrated': 'bg-red-50',
+			'losing-patience': 'bg-red-100',
+			'explosive': 'bg-red-200'
+		};
+		return backgroundClasses[level] || 'bg-slate-50';
+	}
+
+	function getFrustrationQuestionBoxClass(level: string): string {
+		const boxClasses: Record<string, string> = {
+			'calm': 'border-gray-200 bg-white shadow-sm',
+			'mildly-annoyed': 'border-yellow-300 bg-yellow-50 shadow-md',
+			'frustrated': 'border-orange-400 bg-orange-50 shadow-lg',
+			'very-frustrated': 'border-red-500 bg-red-50 shadow-xl border-2',
+			'losing-patience': 'border-red-600 bg-red-100 shadow-2xl border-2 animate-pulse',
+			'explosive': 'border-red-700 bg-red-200 shadow-2xl border-4 animate-bounce'
+		};
+		return boxClasses[level] || 'border-gray-200 bg-white shadow-sm';
+	}
+
+	function getFrustrationInterviewerClass(level: string): string {
+		const interviewerClasses: Record<string, string> = {
+			'calm': 'filter-none',
+			'mildly-annoyed': 'filter-brightness-95',
+			'frustrated': 'filter-brightness-90 contrast-110',
+			'very-frustrated': 'filter-brightness-85 contrast-125 hue-rotate-15',
+			'losing-patience': 'filter-brightness-80 contrast-150 hue-rotate-30 animate-pulse',
+			'explosive': 'filter-brightness-75 contrast-200 hue-rotate-45 animate-bounce'
+		};
+		return interviewerClasses[level] || 'filter-none';
+	}
+
 	function getReactionBorderClass(type: string): string {
 		const borderClasses: Record<string, string> = {
 			'interruption': 'border-red-500',
@@ -562,7 +757,11 @@
 			'conclusion': 'border-purple-500',
 			'memory-based': 'border-pink-500',
 			'accountability-pattern': 'border-red-600',
-			'rapid-fire': 'border-red-700'
+			'rapid-fire': 'border-red-700',
+			'gotcha-moment': 'border-purple-700',
+			// Task 3.8: Surprise/Approval reactions
+			'surprise': 'border-cyan-500',
+			'approval': 'border-green-400'
 		};
 		return borderClasses[type] || 'border-yellow-500';
 	}
@@ -603,6 +802,22 @@
 				'low': '🔥',
 				'medium': '⚡',
 				'high': '💥'
+			},
+			'gotcha-moment': {
+				'low': '💯',
+				'medium': '🎯',
+				'high': '💥'
+			},
+			// Task 3.8: Surprise/Approval reactions
+			'surprise': {
+				'low': '😮',
+				'medium': '😲',
+				'high': '🤯'
+			},
+			'approval': {
+				'low': '👍',
+				'medium': '👏',
+				'high': '🎉'
 			}
 		};
 
@@ -613,7 +828,11 @@
 		const flashClasses: Record<string, string> = {
 			'interruption': 'bg-red-500 bg-opacity-10',
 			'challenge': 'bg-orange-500 bg-opacity-10',
-			'accountability-pattern': 'bg-red-600 bg-opacity-15'
+			'accountability-pattern': 'bg-red-600 bg-opacity-15',
+			'gotcha-moment': 'bg-purple-600 bg-opacity-20',
+			// Task 3.8: Surprise/Approval reactions
+			'surprise': 'bg-cyan-500 bg-opacity-15',
+			'approval': 'bg-green-500 bg-opacity-15'
 		};
 		return flashClasses[type] || 'bg-yellow-500 bg-opacity-10';
 	}
@@ -626,7 +845,10 @@
 			'skeptical': 'yellow-500',
 			'frustrated': 'orange-500',
 			'hostile': 'red-500',
-			'sympathetic': 'green-500'
+			'sympathetic': 'green-500',
+			// Task 3.8: Surprise/Approval moods
+			'surprised': 'cyan-400',
+			'approving': 'emerald-400'
 		};
 
 		const fromColor = moodColors[fromMood] || 'gray-400';
@@ -636,12 +858,16 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gray-900 text-white">
+<div class="min-h-screen text-white transition-all duration-1000 {frustrationBackgroundClass}">
 	<!-- Interview Studio Background -->
 	<div class="relative h-screen overflow-hidden">
-		<!-- Background Studio -->
-		<div class="absolute inset-0 bg-gradient-to-b from-gray-800 to-gray-900">
+		<!-- Background Studio with Frustration Tinting -->
+		<div class="absolute inset-0 bg-gradient-to-b from-gray-800 to-gray-900 transition-all duration-1000">
 			<div class="absolute inset-0 bg-black bg-opacity-40"></div>
+			<!-- Frustration Level Overlay -->
+			{#if currentFrustrationLevel !== 'calm'}
+				<div class="absolute inset-0 transition-all duration-1000 {getFrustrationLevelClass(currentFrustrationLevel)} opacity-10"></div>
+			{/if}
 		</div>
 
 		<!-- Error Display -->
@@ -683,6 +909,19 @@
 								<span class="{interviewerMoodClass} font-medium capitalize transition-all duration-500">
 									{interviewerStatus.mood}
 								</span>
+								<!-- Frustration Level Indicator -->
+								{#if currentFrustrationLevel !== 'calm'}
+									<div class="flex items-center space-x-1">
+										<span class="text-xs {getFrustrationLevelClass(currentFrustrationLevel)} px-2 py-1 rounded-full transition-all duration-500">
+											{currentFrustrationLevel.replace('-', ' ').toUpperCase()}
+										</span>
+										{#if frustrationState?.activeBehaviors?.length > 0}
+											<div class="text-xs text-red-400">
+												⚠️ {frustrationState.activeBehaviors.length}
+											</div>
+										{/if}
+									</div>
+								{/if}
 							</div>
 
 							<!-- Emotional State Visual -->
@@ -811,6 +1050,32 @@
 								</div>
 							{/if}
 
+							<!-- Gotcha Moment Indicator -->
+							{#if gotchaMomentActive}
+								<div class="bg-gradient-to-r from-purple-700 to-pink-700 border-2 border-purple-500 rounded-lg p-4 mb-4 {gotchaAnimation}">
+									<div class="flex items-center justify-between mb-2">
+										<div class="flex items-center space-x-2">
+											<span class="text-2xl">{getConfrontationLevelIcon(gotchaConfrontationLevel)}</span>
+											<span class="text-white font-bold text-sm uppercase tracking-wider">Gotcha!</span>
+											<span class="text-xs px-2 py-1 {getGotchaSeverityColor(gotchaSeverity)} text-white rounded-full font-bold uppercase">
+												{gotchaSeverity}
+											</span>
+										</div>
+										<div class="text-white text-xs font-mono bg-black bg-opacity-30 px-2 py-1 rounded">
+											{Math.round(gotchaDramaticImpact)}% Impact
+										</div>
+									</div>
+									<div class="mb-2">
+										<span class="text-purple-200 text-sm font-semibold">{getGotchaTypeDisplay(gotchaType)}</span>
+									</div>
+									{#if gotchaEvidence.length > 0}
+										<div class="text-purple-100 text-xs">
+											<span class="font-medium">Evidence:</span> {gotchaEvidence.length} contradiction{gotchaEvidence.length > 1 ? 's' : ''} detected
+										</div>
+									{/if}
+								</div>
+							{/if}
+
 							<!-- Enhanced Interviewer Reaction with Animation -->
 							{#if interviewerStatus.recentReaction}
 								<div class="bg-gray-700 border-l-4 {getReactionBorderClass(reactionType)} p-3 mb-4 {reactionAnimation ? `animate-${reactionAnimation}` : ''} transition-all duration-300">
@@ -832,7 +1097,7 @@
 							<div class="space-y-3">
 								{#each currentQuestion.responseOptions as option, index}
 									<button
-										class="w-full text-left p-4 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-600 hover:border-gray-500 transition-all duration-200 {selectedResponse === option.text ? 'border-blue-500 bg-gray-700' : ''}"
+										class="w-full text-left p-4 bg-gray-800 hover:bg-gray-700 rounded-lg transition-all duration-200 {frustrationQuestionClass} {selectedResponse === option.text ? 'border-blue-500 bg-gray-700' : ''}"
 										on:click={() => selectResponse(option)}
 										disabled={isLoading}
 									>
@@ -947,6 +1212,57 @@
 							<p class="text-gray-300 italic">
 								"{reactionMessage}"
 							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Gotcha Moment Dramatic Overlay -->
+		{#if showGotchaOverlay}
+			<div class="absolute inset-0 pointer-events-none z-60">
+				<!-- Intense background flash -->
+				<div class="absolute inset-0 bg-purple-600 bg-opacity-20 animate-pulse"></div>
+				<div class="absolute inset-0 bg-red-600 bg-opacity-10 animate-ping"></div>
+
+				<!-- Dramatic gotcha announcement -->
+				<div class="flex items-center justify-center h-full">
+					<div class="bg-gradient-to-br from-purple-900 to-red-900 border-4 border-purple-400 rounded-xl p-8 max-w-lg mx-4 {gotchaAnimation} shadow-2xl">
+						<div class="text-center">
+							<!-- Dramatic icon based on confrontation level -->
+							<div class="text-6xl mb-4 animate-bounce">{getConfrontationLevelIcon(gotchaConfrontationLevel)}</div>
+
+							<!-- Main gotcha announcement -->
+							<h2 class="text-white font-black text-3xl mb-3 uppercase tracking-widest">
+								GOTCHA!
+							</h2>
+
+							<!-- Gotcha type and severity -->
+							<div class="mb-4">
+								<p class="text-purple-200 font-bold text-xl mb-2">
+									{getGotchaTypeDisplay(gotchaType)}
+								</p>
+								<div class="flex items-center justify-center space-x-2">
+									<span class="text-xs px-3 py-1 {getGotchaSeverityColor(gotchaSeverity)} text-white rounded-full font-bold uppercase tracking-wider">
+										{gotchaSeverity} IMPACT
+									</span>
+									<span class="text-purple-300 text-sm font-mono">
+										{Math.round(gotchaDramaticImpact)}%
+									</span>
+								</div>
+							</div>
+
+							<!-- Gotcha message -->
+							<p class="text-gray-200 italic text-lg leading-relaxed">
+								"{gotchaMessage}"
+							</p>
+
+							<!-- Evidence indicator -->
+							{#if gotchaEvidence.length > 0}
+								<div class="mt-4 text-purple-300 text-sm">
+									<span class="font-medium">⚙️ Evidence:</span> {gotchaEvidence.length} contradiction{gotchaEvidence.length > 1 ? 's' : ''}
+								</div>
+							{/if}
 						</div>
 					</div>
 				</div>
@@ -1220,6 +1536,181 @@
 		100% {
 			box-shadow: 0 0 20px rgba(239, 68, 68, 0.8), 0 0 30px rgba(251, 146, 60, 0.4);
 			border-color: rgb(251, 146, 60);
+		}
+	}
+
+	/* Gotcha moment animations */
+	@keyframes gotcha-direct-contradiction-medium {
+		0% { transform: scale(1) rotateY(0deg); }
+		25% { transform: scale(1.05) rotateY(10deg); }
+		50% { transform: scale(1.1) rotateY(-10deg); }
+		75% { transform: scale(1.05) rotateY(5deg); }
+		100% { transform: scale(1) rotateY(0deg); }
+	}
+
+	@keyframes gotcha-direct-contradiction-high {
+		0% { transform: scale(1) rotateY(0deg) rotateZ(0deg); }
+		20% { transform: scale(1.1) rotateY(15deg) rotateZ(2deg); }
+		40% { transform: scale(1.15) rotateY(-15deg) rotateZ(-2deg); }
+		60% { transform: scale(1.1) rotateY(10deg) rotateZ(1deg); }
+		80% { transform: scale(1.05) rotateY(-5deg) rotateZ(-1deg); }
+		100% { transform: scale(1) rotateY(0deg) rotateZ(0deg); }
+	}
+
+	@keyframes gotcha-direct-contradiction-devastating {
+		0% { transform: scale(1) rotateY(0deg) rotateZ(0deg); filter: brightness(1); }
+		15% { transform: scale(1.2) rotateY(20deg) rotateZ(3deg); filter: brightness(1.3); }
+		30% { transform: scale(1.25) rotateY(-20deg) rotateZ(-3deg); filter: brightness(1.5); }
+		45% { transform: scale(1.15) rotateY(15deg) rotateZ(2deg); filter: brightness(1.2); }
+		60% { transform: scale(1.1) rotateY(-10deg) rotateZ(-2deg); filter: brightness(1.1); }
+		75% { transform: scale(1.05) rotateY(5deg) rotateZ(1deg); filter: brightness(1.05); }
+		100% { transform: scale(1) rotateY(0deg) rotateZ(0deg); filter: brightness(1); }
+	}
+
+	@keyframes gotcha-expertise-fail-medium {
+		0% { transform: translateY(0) scale(1); }
+		25% { transform: translateY(-8px) scale(1.03); }
+		50% { transform: translateY(4px) scale(1.02); }
+		75% { transform: translateY(-4px) scale(1.01); }
+		100% { transform: translateY(0) scale(1); }
+	}
+
+	@keyframes gotcha-expertise-fail-high {
+		0% { transform: translateY(0) scale(1) rotateX(0deg); }
+		20% { transform: translateY(-12px) scale(1.05) rotateX(5deg); }
+		40% { transform: translateY(6px) scale(1.04) rotateX(-3deg); }
+		60% { transform: translateY(-8px) scale(1.03) rotateX(2deg); }
+		80% { transform: translateY(2px) scale(1.01) rotateX(-1deg); }
+		100% { transform: translateY(0) scale(1) rotateX(0deg); }
+	}
+
+	@keyframes gotcha-expertise-fail-devastating {
+		0% { transform: translateY(0) scale(1) rotateX(0deg); filter: brightness(1) hue-rotate(0deg); }
+		25% { transform: translateY(-15px) scale(1.08) rotateX(8deg); filter: brightness(1.2) hue-rotate(30deg); }
+		50% { transform: translateY(8px) scale(1.06) rotateX(-5deg); filter: brightness(1.4) hue-rotate(-30deg); }
+		75% { transform: translateY(-6px) scale(1.03) rotateX(3deg); filter: brightness(1.1) hue-rotate(15deg); }
+		100% { transform: translateY(0) scale(1) rotateX(0deg); filter: brightness(1) hue-rotate(0deg); }
+	}
+
+	@keyframes gotcha-moral-inconsistency-medium {
+		0% { transform: scale(1) skewX(0deg); }
+		25% { transform: scale(1.04) skewX(2deg); }
+		50% { transform: scale(1.06) skewX(-2deg); }
+		75% { transform: scale(1.02) skewX(1deg); }
+		100% { transform: scale(1) skewX(0deg); }
+	}
+
+	@keyframes gotcha-moral-inconsistency-high {
+		0% { transform: scale(1) skewX(0deg) skewY(0deg); }
+		20% { transform: scale(1.06) skewX(3deg) skewY(1deg); }
+		40% { transform: scale(1.08) skewX(-3deg) skewY(-1deg); }
+		60% { transform: scale(1.04) skewX(2deg) skewY(0.5deg); }
+		80% { transform: scale(1.02) skewX(-1deg) skewY(-0.5deg); }
+		100% { transform: scale(1) skewX(0deg) skewY(0deg); }
+	}
+
+	@keyframes gotcha-moral-inconsistency-devastating {
+		0% { transform: scale(1) skewX(0deg) skewY(0deg); filter: contrast(1) saturate(1); }
+		20% { transform: scale(1.1) skewX(4deg) skewY(2deg); filter: contrast(1.3) saturate(1.5); }
+		40% { transform: scale(1.12) skewX(-4deg) skewY(-2deg); filter: contrast(1.6) saturate(2); }
+		60% { transform: scale(1.06) skewX(3deg) skewY(1deg); filter: contrast(1.2) saturate(1.3); }
+		80% { transform: scale(1.03) skewX(-2deg) skewY(-1deg); filter: contrast(1.1) saturate(1.1); }
+		100% { transform: scale(1) skewX(0deg) skewY(0deg); filter: contrast(1) saturate(1); }
+	}
+
+	@keyframes gotcha-evasion-pattern-medium {
+		0% { transform: translateX(0) scale(1); }
+		20% { transform: translateX(-5px) scale(1.02); }
+		40% { transform: translateX(5px) scale(1.02); }
+		60% { transform: translateX(-3px) scale(1.01); }
+		80% { transform: translateX(3px) scale(1.01); }
+		100% { transform: translateX(0) scale(1); }
+	}
+
+	@keyframes gotcha-evasion-pattern-high {
+		0% { transform: translateX(0) scale(1) rotateZ(0deg); }
+		15% { transform: translateX(-8px) scale(1.03) rotateZ(1deg); }
+		30% { transform: translateX(8px) scale(1.03) rotateZ(-1deg); }
+		45% { transform: translateX(-6px) scale(1.02) rotateZ(0.5deg); }
+		60% { transform: translateX(6px) scale(1.02) rotateZ(-0.5deg); }
+		75% { transform: translateX(-3px) scale(1.01) rotateZ(0.25deg); }
+		90% { transform: translateX(3px) scale(1.01) rotateZ(-0.25deg); }
+		100% { transform: translateX(0) scale(1) rotateZ(0deg); }
+	}
+
+	/* Apply gotcha animations */
+	.animate-gotcha-direct-contradiction-medium {
+		animation: gotcha-direct-contradiction-medium 1.5s ease-in-out;
+	}
+
+	.animate-gotcha-direct-contradiction-high {
+		animation: gotcha-direct-contradiction-high 2s ease-in-out;
+	}
+
+	.animate-gotcha-direct-contradiction-devastating {
+		animation: gotcha-direct-contradiction-devastating 2.5s ease-in-out;
+	}
+
+	.animate-gotcha-expertise-fail-medium {
+		animation: gotcha-expertise-fail-medium 1.3s ease-in-out;
+	}
+
+	.animate-gotcha-expertise-fail-high {
+		animation: gotcha-expertise-fail-high 1.8s ease-in-out;
+	}
+
+	.animate-gotcha-expertise-fail-devastating {
+		animation: gotcha-expertise-fail-devastating 2.2s ease-in-out;
+	}
+
+	.animate-gotcha-moral-inconsistency-medium {
+		animation: gotcha-moral-inconsistency-medium 1.6s ease-in-out;
+	}
+
+	.animate-gotcha-moral-inconsistency-high {
+		animation: gotcha-moral-inconsistency-high 2.1s ease-in-out;
+	}
+
+	.animate-gotcha-moral-inconsistency-devastating {
+		animation: gotcha-moral-inconsistency-devastating 2.8s ease-in-out;
+	}
+
+	.animate-gotcha-evasion-pattern-medium {
+		animation: gotcha-evasion-pattern-medium 1.2s ease-in-out;
+	}
+
+	.animate-gotcha-evasion-pattern-high {
+		animation: gotcha-evasion-pattern-high 1.7s ease-in-out;
+	}
+
+	/* Gotcha overlay entrance/exit */
+	.gotcha-overlay-enter {
+		animation: gotchaFadeInScale 0.5s ease-out;
+	}
+
+	.gotcha-overlay-exit {
+		animation: gotchaFadeOutScale 0.4s ease-in;
+	}
+
+	@keyframes gotchaFadeInScale {
+		0% {
+			opacity: 0;
+			transform: scale(0.6) rotateY(-20deg);
+		}
+		100% {
+			opacity: 1;
+			transform: scale(1) rotateY(0deg);
+		}
+	}
+
+	@keyframes gotchaFadeOutScale {
+		0% {
+			opacity: 1;
+			transform: scale(1) rotateY(0deg);
+		}
+		100% {
+			opacity: 0;
+			transform: scale(0.6) rotateY(20deg);
 		}
 	}
 </style>

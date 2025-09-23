@@ -28,25 +28,25 @@
 - [x] 3.3 Create memory system for referencing previous answers
 - [x] 3.4 Add emotional reaction animations and visual cues
 - [x] 3.5 Build rapid-fire follow-up question system
-- [ ] 3.6 Implement "gotcha" moment detection and response
-- [ ] 3.7 Create interviewer frustration escalation system
-- [ ] 3.8 Add surprise/approval reactions for unexpected answers
+- [x] 3.6 Implement "gotcha" moment detection and response
+- [x] 3.7 Create interviewer frustration escalation system
+- [x] 3.8 Add surprise/approval reactions for unexpected answers
 
 ## Phase 4: News Impact & Aftermath System
-- [ ] 4.1 Design dynamic headline generation system
-- [ ] 4.2 Create social media reaction simulator with demographic targeting
-- [ ] 4.3 Build coalition partner response system
-- [ ] 4.4 Implement approval rating impact calculations
-- [ ] 4.5 Create newspaper article generator based on interview content
-- [ ] 4.6 Add TV news clip summary with interviewer quotes
-- [ ] 4.7 Build demographic relationship impact system
-- [ ] 4.8 Create viral moment detection and special coverage
+- [x] 4.1 Design dynamic headline generation system
+- [x] 4.2 Create social media reaction simulator with demographic targeting
+- [x] 4.3 Build coalition partner response system
+- [x] 4.4 Implement approval rating impact calculations
+- [x] 4.5 Create newspaper article generator based on interview content
+- [x] 4.6 Add TV news clip summary with interviewer quotes
+- [x] 4.7 Build demographic relationship impact system
+- [x] 4.8 Create viral moment detection and special coverage
 
 ## Phase 5: Campaign-Stage Interview System
-- [ ] 5.1 Design scandal response interview framework
-- [ ] 5.2 Create debate preparation interview system
-- [ ] 5.3 Build crisis management interview scenarios
-- [ ] 5.4 Implement election campaign interview events
+- [x] 5.1 Design scandal response interview framework
+- [x] 5.2 Create debate preparation interview system
+- [x] 5.3 Build crisis management interview scenarios
+- [x] 5.4 Implement election campaign interview events
 - [ ] 5.5 Add coalition negotiation interview situations
 - [ ] 5.6 Create policy announcement interview format
 - [ ] 5.7 Build investigative journalism encounter system

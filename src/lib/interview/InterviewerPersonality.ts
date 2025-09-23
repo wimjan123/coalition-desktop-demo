@@ -1,53 +1,6 @@
 /**
  * Dynamic Interviewer Personality System
- * Manages interviewer mood, reactions, and memory
- */
-
-import type {
-  InterviewerType,
-  InterviewerMood,
-  PlayerResponse,
-  MoodChange,
-  InterviewerReaction,
-  ReactionPattern,
-  InterviewerMemory
-} from '../types/interview.js';
-
-/**
- * Dynamic Interviewer Personality System
- * Manages interviewer mood, reactions, and memory
- */
-
-import type {
-  InterviewerType,
-  InterviewerMood,
-  PlayerResponse,
-  MoodChange,
-  InterviewerReaction,
-  ReactionPattern,
-  InterviewerMemory,
-  BackgroundApproach
-} from '../types/interview.js';
-
-/**
- * Dynamic Interviewer Personality System
- * Manages interviewer mood, reactions, and memory
- */
-
-import type {
-  InterviewerType,
-  InterviewerMood,
-  PlayerResponse,
-  MoodChange,
-  InterviewerReaction,
-  ReactionPattern,
-  InterviewerMemory,
-  BackgroundApproach
-} from '../types/interview.js';
-
-/**
- * Dynamic Interviewer Personality System
- * Manages interviewer mood, reactions, and memory
+ * Manages interviewer mood, reactions, and memory with frustration escalation
  */
 
 import type {
@@ -62,27 +15,22 @@ import type {
   MoodProgression,
   MoodState,
   MoodTrigger,
-  MoodTransition
-} from '../types/interview.js';
-
-/**
- * Dynamic Interviewer Personality System
- * Manages interviewer mood, reactions, and memory
- */
-
-import type {
-  InterviewerType,
-  InterviewerMood,
-  PlayerResponse,
-  MoodChange,
-  InterviewerReaction,
-  ReactionPattern,
-  InterviewerMemory,
-  BackgroundApproach,
-  MoodProgression,
-  MoodState,
-  MoodTrigger,
-  MoodTransition
+  MoodTransition,
+  FrustrationEscalationSystem,
+  FrustrationLevel,
+  FrustrationTrigger,
+  FrustrationTriggerType,
+  FrustrationThreshold,
+  FrustrationBehaviorChange,
+  FrustrationEvent,
+  FrustrationPattern,
+  EnhancedInterviewerMemory,
+  SurpriseApprovalSystem,
+  SurpriseDetector,
+  ApprovalDetector,
+  SurpriseType,
+  ApprovalType,
+  SurpriseApprovalEvent
 } from '../types/interview.js';
 
 export class InterviewerPersonality {
@@ -94,19 +42,23 @@ export class InterviewerPersonality {
   private lastReaction: InterviewerReaction | null = null;
   private moodHistory: Array<{ mood: InterviewerMood; timestamp: number; trigger: string }>;
 
+  // Frustration Escalation System
+  private frustrationSystem: FrustrationEscalationSystem;
+  private enhancedMemory: EnhancedInterviewerMemory;
+
+  // Surprise/Approval System - Task 3.8
+  private surpriseApprovalSystem: SurpriseApprovalSystem;
+
   constructor(type: InterviewerType, backgroundId: string) {
     this.type = type;
     this.backgroundId = backgroundId;
     this.mood = 'neutral';
+    this.moodHistory = [];
     this.initializeMemory();
     this.initializeReactionPatterns();
-    this.applyBackgroundPersonality(); // Apply background-specific adaptations
-    this.initializeMoodProgression(); // Initialize enhanced mood progression system
-    this.moodHistory = [{
-      mood: 'neutral',
-      timestamp: Date.now(),
-      trigger: 'interview-start'
-    }];
+    this.initializeMoodProgression();
+    this.initializeFrustrationSystem();
+    this.surpriseApprovalSystem = this.initializeSurpriseApprovalSystem();
   }
 
   private initializeMemory(): void {
@@ -779,33 +731,59 @@ export class InterviewerPersonality {
       { from: 'neutral', to: 'professional', minIntensity: 20, transitionSpeed: 'gradual', visualCue: 'nod-approval' },
       { from: 'neutral', to: 'skeptical', minIntensity: 30, transitionSpeed: 'gradual', visualCue: 'eyebrow-raise' },
       { from: 'neutral', to: 'excited', minIntensity: 40, transitionSpeed: 'instant', visualCue: 'lean-forward' },
+      { from: 'neutral', to: 'surprised', minIntensity: 25, transitionSpeed: 'instant', visualCue: 'eyebrows-up' },
+      { from: 'neutral', to: 'approving', minIntensity: 35, transitionSpeed: 'gradual', visualCue: 'slight-smile' },
       
       // From professional
       { from: 'professional', to: 'skeptical', minIntensity: 35, transitionSpeed: 'gradual', visualCue: 'frown-slight' },
       { from: 'professional', to: 'excited', minIntensity: 45, transitionSpeed: 'gradual', visualCue: 'smile-interest' },
       { from: 'professional', to: 'frustrated', minIntensity: 50, transitionSpeed: 'gradual', visualCue: 'sigh-disappointment' },
+      { from: 'professional', to: 'surprised', minIntensity: 30, transitionSpeed: 'instant', visualCue: 'eyebrows-raise' },
+      { from: 'professional', to: 'approving', minIntensity: 40, transitionSpeed: 'gradual', visualCue: 'nod-impressed' },
       
       // From skeptical
       { from: 'skeptical', to: 'frustrated', minIntensity: 40, transitionSpeed: 'gradual', visualCue: 'eyes-narrow' },
       { from: 'skeptical', to: 'hostile', minIntensity: 70, transitionSpeed: 'instant', visualCue: 'scowl-deep' },
       { from: 'skeptical', to: 'professional', minIntensity: 25, transitionSpeed: 'slow', visualCue: 'expression-soften' },
+      { from: 'skeptical', to: 'surprised', minIntensity: 35, transitionSpeed: 'instant', visualCue: 'surprise-break' },
+      { from: 'skeptical', to: 'approving', minIntensity: 50, transitionSpeed: 'slow', visualCue: 'grudging-respect' },
       
       // From excited
       { from: 'excited', to: 'professional', minIntensity: 20, transitionSpeed: 'gradual', visualCue: 'settle-back' },
       { from: 'excited', to: 'frustrated', minIntensity: 60, transitionSpeed: 'instant', visualCue: 'disappointment-sharp' },
+      { from: 'excited', to: 'surprised', minIntensity: 25, transitionSpeed: 'instant', visualCue: 'double-take' },
+      { from: 'excited', to: 'approving', minIntensity: 35, transitionSpeed: 'gradual', visualCue: 'excited-approval' },
       
       // From frustrated
       { from: 'frustrated', to: 'hostile', minIntensity: 60, transitionSpeed: 'gradual', visualCue: 'anger-build' },
       { from: 'frustrated', to: 'skeptical', minIntensity: 30, transitionSpeed: 'slow', visualCue: 'calm-down' },
       { from: 'frustrated', to: 'sympathetic', minIntensity: 50, transitionSpeed: 'instant', visualCue: 'surprise-soften' },
+      { from: 'frustrated', to: 'surprised', minIntensity: 40, transitionSpeed: 'instant', visualCue: 'frustration-break' },
+      { from: 'frustrated', to: 'approving', minIntensity: 55, transitionSpeed: 'slow', visualCue: 'reluctant-respect' },
       
       // From hostile
       { from: 'hostile', to: 'frustrated', minIntensity: 40, transitionSpeed: 'slow', visualCue: 'rage-subside' },
       { from: 'hostile', to: 'sympathetic', minIntensity: 70, transitionSpeed: 'instant', visualCue: 'shock-pivot' },
+      { from: 'hostile', to: 'surprised', minIntensity: 60, transitionSpeed: 'instant', visualCue: 'hostility-shock' },
+      { from: 'hostile', to: 'approving', minIntensity: 75, transitionSpeed: 'instant', visualCue: 'surprise-respect' },
       
       // From sympathetic
       { from: 'sympathetic', to: 'professional', minIntensity: 30, transitionSpeed: 'gradual', visualCue: 'warmth-maintain' },
-      { from: 'sympathetic', to: 'frustrated', minIntensity: 50, transitionSpeed: 'gradual', visualCue: 'sympathy-fade' }
+      { from: 'sympathetic', to: 'frustrated', minIntensity: 50, transitionSpeed: 'gradual', visualCue: 'sympathy-fade' },
+      { from: 'sympathetic', to: 'surprised', minIntensity: 35, transitionSpeed: 'instant', visualCue: 'sympathetic-surprise' },
+      { from: 'sympathetic', to: 'approving', minIntensity: 25, transitionSpeed: 'gradual', visualCue: 'warm-approval' },
+
+      // From surprised (Task 3.8)
+      { from: 'surprised', to: 'professional', minIntensity: 20, transitionSpeed: 'gradual', visualCue: 'compose-self' },
+      { from: 'surprised', to: 'approving', minIntensity: 30, transitionSpeed: 'gradual', visualCue: 'surprise-to-approval' },
+      { from: 'surprised', to: 'excited', minIntensity: 40, transitionSpeed: 'gradual', visualCue: 'surprise-excitement' },
+      { from: 'surprised', to: 'skeptical', minIntensity: 35, transitionSpeed: 'gradual', visualCue: 'surprise-doubt' },
+
+      // From approving (Task 3.8)
+      { from: 'approving', to: 'professional', minIntensity: 25, transitionSpeed: 'gradual', visualCue: 'approval-settle' },
+      { from: 'approving', to: 'excited', minIntensity: 35, transitionSpeed: 'gradual', visualCue: 'approval-excitement' },
+      { from: 'approving', to: 'surprised', minIntensity: 30, transitionSpeed: 'instant', visualCue: 'approval-surprise' },
+      { from: 'approving', to: 'frustrated', minIntensity: 45, transitionSpeed: 'gradual', visualCue: 'approval-fade' }
     ];
   }
 
@@ -984,20 +962,797 @@ export class InterviewerPersonality {
    */
   private applyMoodDecay(): void {
     this.moodState.duration += 1; // Assume called once per response
-    
+
     // Intense moods naturally decay
     if (this.moodState.intensity > 70 && this.moodState.duration > 3) {
       this.moodState.intensity = Math.max(50, this.moodState.intensity - 5);
       this.moodProgression.moodIntensity = this.moodState.intensity;
     }
-    
+
     // Return to neutral from extreme positions
-    if (['hostile', 'excited'].includes(this.moodState.mood) && 
+    if (['hostile', 'excited'].includes(this.moodState.mood) &&
         this.moodState.intensity < 40) {
       this.moodState.mood = 'professional';
       this.moodProgression.currentMood = 'professional';
       this.mood = 'professional';
     }
+  }
+
+  /**
+   * Initialize Frustration Escalation System - Task 3.7
+   */
+  private initializeFrustrationSystem(): void {
+    const approach = this.getBackgroundApproachAdaptations();
+
+    this.frustrationSystem = {
+      enabled: true,
+      currentLevel: 'calm',
+      triggers: this.buildFrustrationTriggers(approach),
+      escalationThresholds: this.buildFrustrationThresholds(),
+      behaviorChanges: this.buildFrustrationBehaviorChanges(),
+      visualEffects: this.buildFrustrationVisualConfig(),
+      cooldownPeriod: 10, // 10 seconds between escalations
+      decayRate: 5, // 5 points per minute
+      maxFrustration: 100
+    };
+
+    // Initialize enhanced memory with frustration tracking
+    this.enhancedMemory = {
+      ...this.memory,
+      frustrationHistory: [],
+      triggerCooldowns: new Map(),
+      escalationPattern: {
+        dominantTriggers: [],
+        escalationSpeed: 'gradual',
+        recoveryDifficulty: approach.baseAggressiveness,
+        peakFrustration: 0,
+        averageDuration: 0
+      },
+      recoveryAttempts: 0
+    };
+  }
+
+  /**
+   * Build frustration triggers based on background approach
+   */
+  private buildFrustrationTriggers(approach: BackgroundApproach): FrustrationTrigger[] {
+    const baseTriggers: FrustrationTrigger[] = [
+      {
+        id: 'consecutive-evasions',
+        type: 'evasion',
+        condition: 'consecutive_evasions>=2',
+        frustractionIncrease: 15,
+        probability: 0.8,
+        description: 'Multiple evasive answers build frustration',
+        cooldown: 30
+      },
+      {
+        id: 'major-contradiction',
+        type: 'contradiction',
+        condition: 'contradiction_severity>=major',
+        frustractionIncrease: 20,
+        probability: 0.9,
+        description: 'Major contradictions cause significant frustration',
+        cooldown: 60
+      },
+      {
+        id: 'time-wasting',
+        type: 'time-wasting',
+        condition: 'response_time>90_seconds',
+        frustractionIncrease: 12,
+        probability: 0.7,
+        description: 'Excessive response time wastes interview time',
+        cooldown: 45
+      },
+      {
+        id: 'deflection-pattern',
+        type: 'deflection',
+        condition: 'deflection_count>=3',
+        frustractionIncrease: 18,
+        probability: 0.85,
+        description: 'Pattern of deflecting to other topics',
+        cooldown: 90
+      },
+      {
+        id: 'non-responsive',
+        type: 'non-answer',
+        condition: 'non_answer_pattern>=2',
+        frustractionIncrease: 16,
+        probability: 0.8,
+        description: 'Non-responsive answers to direct questions',
+        cooldown: 60
+      },
+      {
+        id: 'interruption-resistance',
+        type: 'interruption-resistance',
+        condition: 'talks_over_interviewer>=2',
+        frustractionIncrease: 25,
+        probability: 0.9,
+        description: 'Talking over interviewer interruptions',
+        cooldown: 30
+      },
+      {
+        id: 'fact-avoidance',
+        type: 'fact-avoidance',
+        condition: 'avoids_factual_questions>=2',
+        frustractionIncrease: 14,
+        probability: 0.75,
+        description: 'Avoiding factual verification questions',
+        cooldown: 75
+      },
+      {
+        id: 'policy-vagueness',
+        type: 'policy-vagueness',
+        condition: 'vague_policy_answers>=3',
+        frustractionIncrease: 13,
+        probability: 0.7,
+        description: 'Consistently vague policy positions',
+        cooldown: 120
+      }
+    ];
+
+    // Add background-specific triggers with higher impact
+    const backgroundTriggers = this.buildBackgroundFrustrationTriggers(approach);
+
+    return [...baseTriggers, ...backgroundTriggers];
+  }
+
+  /**
+   * Build background-specific frustration triggers
+   */
+  private buildBackgroundFrustrationTriggers(approach: BackgroundApproach): FrustrationTrigger[] {
+    const triggers: Record<string, FrustrationTrigger[]> = {
+      'toeslagenaffaire-whistleblower': [
+        {
+          id: 'victim-dismissal',
+          type: 'personal-attack',
+          condition: 'dismisses_victim_concerns',
+          frustractionIncrease: 35,
+          probability: 0.95,
+          description: 'Dismissing victim concerns triggers maximum frustration',
+          cooldown: 60
+        },
+        {
+          id: 'accountability-deflection',
+          type: 'deflection',
+          condition: 'deflects_personal_accountability',
+          frustractionIncrease: 30,
+          probability: 0.9,
+          description: 'Deflecting personal accountability in whistleblowing context',
+          cooldown: 90
+        }
+      ],
+      'shell-executive': [
+        {
+          id: 'climate-denial',
+          type: 'fact-avoidance',
+          condition: 'avoids_climate_responsibility',
+          frustractionIncrease: 28,
+          probability: 0.9,
+          description: 'Avoiding climate responsibility triggers environmental justice frustration',
+          cooldown: 75
+        },
+        {
+          id: 'greenwashing-speak',
+          type: 'deflection',
+          condition: 'uses_corporate_greenwashing',
+          frustractionIncrease: 22,
+          probability: 0.85,
+          description: 'Corporate greenwashing language frustrates environmental focus',
+          cooldown: 60
+        }
+      ],
+      'former-politician': [
+        {
+          id: 'political-speak',
+          type: 'evasion',
+          condition: 'uses_political_speak>=2',
+          frustractionIncrease: 25,
+          probability: 0.9,
+          description: 'Political speak from failed politician especially frustrating',
+          cooldown: 45
+        },
+        {
+          id: 'failure-denial',
+          type: 'deflection',
+          condition: 'deflects_past_failures',
+          frustractionIncrease: 30,
+          probability: 0.95,
+          description: 'Deflecting past political failures triggers skepticism',
+          cooldown: 120
+        }
+      ]
+    };
+
+    return triggers[this.backgroundId] || [];
+  }
+
+  /**
+   * Build frustration level thresholds
+   */
+  private buildFrustrationThresholds(): FrustrationThreshold[] {
+    return [
+      {
+        level: 'calm',
+        minValue: 0,
+        maxValue: 20,
+        transitionEffects: [],
+        behaviorChanges: [],
+        moodOverride: 'professional'
+      },
+      {
+        level: 'mildly-annoyed',
+        minValue: 21,
+        maxValue: 40,
+        transitionEffects: [
+          { type: 'visual', effect: 'slight-frown', intensity: 30, duration: 2000 },
+          { type: 'audio', effect: 'subtle-sigh', intensity: 25, duration: 1500 }
+        ],
+        behaviorChanges: ['reduce-patience', 'increase-directness'],
+        moodOverride: 'skeptical'
+      },
+      {
+        level: 'frustrated',
+        minValue: 41,
+        maxValue: 60,
+        transitionEffects: [
+          { type: 'visual', effect: 'furrowed-brow', intensity: 50, duration: 3000 },
+          { type: 'text', effect: 'sharper-tone', intensity: 40, duration: 0 },
+          { type: 'timing', effect: 'faster-interruptions', intensity: 45, duration: 0 }
+        ],
+        behaviorChanges: ['aggressive-questioning', 'frequent-interruptions', 'memory-references'],
+        moodOverride: 'frustrated'
+      },
+      {
+        level: 'very-frustrated',
+        minValue: 61,
+        maxValue: 80,
+        transitionEffects: [
+          { type: 'visual', effect: 'intense-stare', intensity: 70, duration: 4000 },
+          { type: 'audio', effect: 'frustrated-exhale', intensity: 60, duration: 2000 },
+          { type: 'text', effect: 'hostile-tone', intensity: 65, duration: 0 }
+        ],
+        behaviorChanges: ['rapid-fire-questions', 'aggressive-fact-checking', 'hostile-reactions'],
+        moodOverride: 'hostile'
+      },
+      {
+        level: 'losing-patience',
+        minValue: 81,
+        maxValue: 95,
+        transitionEffects: [
+          { type: 'visual', effect: 'dramatic-reaction', intensity: 85, duration: 5000 },
+          { type: 'audio', effect: 'anger-warning', intensity: 80, duration: 3000 },
+          { type: 'text', effect: 'threatening-language', intensity: 85, duration: 0 }
+        ],
+        behaviorChanges: ['interview-threats', 'maximum-aggression', 'credibility-attacks'],
+        moodOverride: 'hostile'
+      },
+      {
+        level: 'explosive',
+        minValue: 96,
+        maxValue: 100,
+        transitionEffects: [
+          { type: 'visual', effect: 'explosive-reaction', intensity: 100, duration: 8000 },
+          { type: 'audio', effect: 'interview-termination-warning', intensity: 100, duration: 4000 },
+          { type: 'text', effect: 'interview-ending-language', intensity: 100, duration: 0 }
+        ],
+        behaviorChanges: ['interview-termination', 'public-confrontation', 'career-damage'],
+        moodOverride: 'hostile'
+      }
+    ];
+  }
+
+  /**
+   * Build frustration behavior changes
+   */
+  private buildFrustrationBehaviorChanges(): FrustrationBehaviorChange[] {
+    return [
+      {
+        id: 'reduce-patience',
+        frustractionLevel: 'mildly-annoyed',
+        type: 'patience-threshold',
+        modifications: [
+          { property: 'responseTimeLimit', modifier: 'multiply', value: 0.9, description: 'Reduce time patience by 10%' },
+          { property: 'interruptionThreshold', modifier: 'multiply', value: 0.95, description: 'Slightly more likely to interrupt' }
+        ],
+        description: 'Reduce patience for long responses and increase interruption likelihood',
+        active: false
+      },
+      {
+        id: 'aggressive-questioning',
+        frustractionLevel: 'frustrated',
+        type: 'questioning-style',
+        modifications: [
+          { property: 'questionIntensity', modifier: 'multiply', value: 1.3, description: 'More aggressive question phrasing' },
+          { property: 'followUpProbability', modifier: 'multiply', value: 1.4, description: '40% more follow-up questions' }
+        ],
+        description: 'Adopt more aggressive questioning style with frequent follow-ups',
+        active: false
+      },
+      {
+        id: 'rapid-fire-questions',
+        frustractionLevel: 'very-frustrated',
+        type: 'rapid-fire-trigger',
+        modifications: [
+          { property: 'rapidFireThreshold', modifier: 'multiply', value: 0.5, description: 'Lower threshold for rapid-fire mode' },
+          { property: 'rapidFireIntensity', modifier: 'add', value: 1, description: 'Increase rapid-fire intensity level' }
+        ],
+        description: 'More likely to trigger rapid-fire questioning sessions',
+        active: false
+      },
+      {
+        id: 'interview-threats',
+        frustractionLevel: 'losing-patience',
+        type: 'voice-tone',
+        modifications: [
+          { property: 'threatLevel', modifier: 'set', value: 0.8, description: 'Include interview termination threats' },
+          { property: 'aggressionLevel', modifier: 'set', value: 0.9, description: 'Maximum aggression short of termination' }
+        ],
+        description: 'Begin threatening interview termination and maximum aggression',
+        active: false
+      },
+      {
+        id: 'interview-termination',
+        frustractionLevel: 'explosive',
+        type: 'patience-threshold',
+        modifications: [
+          { property: 'terminationTrigger', modifier: 'set', value: 1.0, description: 'Interview termination becomes likely' },
+          { property: 'publicConfrontation', modifier: 'set', value: 1.0, description: 'Public confrontation mode' }
+        ],
+        description: 'Interview termination becomes highly likely with explosive reactions',
+        active: false
+      }
+    ];
+  }
+
+  /**
+   * Build frustration visual configuration
+   */
+  private buildFrustrationVisualConfig(): any {
+    return {
+      levelIndicators: {
+        'calm': {
+          backgroundColor: '#f8fafc',
+          lighting: 'soft-natural',
+          cameraAngle: 'neutral-professional',
+          interviewerExpression: 'professional-neutral',
+          textColor: '#374151',
+          uiElements: {
+            questionBox: 'border-gray-200',
+            timerColor: '#10b981',
+            borderStyle: 'solid'
+          }
+        },
+        'mildly-annoyed': {
+          backgroundColor: '#fef3c7',
+          lighting: 'slightly-harsh',
+          cameraAngle: 'subtle-lean-forward',
+          interviewerExpression: 'slight-frown',
+          textColor: '#d97706',
+          uiElements: {
+            questionBox: 'border-yellow-300',
+            timerColor: '#f59e0b',
+            borderStyle: 'solid'
+          }
+        },
+        'frustrated': {
+          backgroundColor: '#fed7aa',
+          lighting: 'harsher-contrast',
+          cameraAngle: 'lean-forward-intent',
+          interviewerExpression: 'furrowed-brow',
+          textColor: '#ea580c',
+          uiElements: {
+            questionBox: 'border-orange-400',
+            timerColor: '#ea580c',
+            borderStyle: 'double'
+          }
+        },
+        'very-frustrated': {
+          backgroundColor: '#fecaca',
+          lighting: 'dramatic-harsh',
+          cameraAngle: 'aggressive-forward',
+          interviewerExpression: 'intense-stare',
+          textColor: '#dc2626',
+          uiElements: {
+            questionBox: 'border-red-500',
+            timerColor: '#dc2626',
+            borderStyle: 'solid-thick'
+          }
+        },
+        'losing-patience': {
+          backgroundColor: '#fca5a5',
+          lighting: 'dramatic-shadows',
+          cameraAngle: 'confrontational',
+          interviewerExpression: 'angry-warning',
+          textColor: '#b91c1c',
+          uiElements: {
+            questionBox: 'border-red-600 animate-pulse',
+            timerColor: '#b91c1c',
+            borderStyle: 'dashed-thick'
+          }
+        },
+        'explosive': {
+          backgroundColor: '#ef4444',
+          lighting: 'harsh-dramatic',
+          cameraAngle: 'explosive-close',
+          interviewerExpression: 'explosive-anger',
+          textColor: '#991b1b',
+          uiElements: {
+            questionBox: 'border-red-700 animate-bounce',
+            timerColor: '#991b1b',
+            borderStyle: 'solid-very-thick'
+          }
+        }
+      },
+      transitionAnimations: [
+        {
+          fromLevel: 'calm' as FrustrationLevel,
+          toLevel: 'mildly-annoyed' as FrustrationLevel,
+          animationType: 'smooth',
+          duration: 1500,
+          effects: ['subtle-color-shift', 'gentle-expression-change']
+        },
+        {
+          fromLevel: 'frustrated' as FrustrationLevel,
+          toLevel: 'very-frustrated' as FrustrationLevel,
+          animationType: 'dramatic',
+          duration: 2000,
+          effects: ['color-flash', 'dramatic-expression-shift', 'camera-shake']
+        },
+        {
+          fromLevel: 'losing-patience' as FrustrationLevel,
+          toLevel: 'explosive' as FrustrationLevel,
+          animationType: 'instant',
+          duration: 500,
+          effects: ['screen-flash', 'explosive-animation', 'dramatic-zoom']
+        }
+      ]
+    };
+  }
+
+  /**
+   * Process frustration escalation on response - Task 3.7
+   */
+  processFrustrationEscalation(response: PlayerResponse): FrustrationEvent | null {
+    if (!this.frustrationSystem.enabled) return null;
+
+    const currentTime = Date.now();
+
+    // Check for applicable triggers
+    for (const trigger of this.frustrationSystem.triggers) {
+      if (this.shouldTriggerFrustration(trigger, response, currentTime)) {
+        const event = this.executeFrustrationTrigger(trigger, response, currentTime);
+        if (event) {
+          this.updateFrustrationBehaviors();
+          return event;
+        }
+      }
+    }
+
+    // Apply natural frustration decay
+    this.applyFrustrationDecay();
+
+    return null;
+  }
+
+  /**
+   * Check if frustration trigger should activate
+   */
+  private shouldTriggerFrustration(trigger: FrustrationTrigger, response: PlayerResponse, currentTime: number): boolean {
+    // Check cooldown
+    const lastTrigger = this.enhancedMemory.triggerCooldowns.get(trigger.id);
+    if (lastTrigger && (currentTime - lastTrigger) < (trigger.cooldown || 0) * 1000) {
+      return false;
+    }
+
+    // Check probability
+    if (Math.random() > trigger.probability) return false;
+
+    // Evaluate trigger condition
+    return this.evaluateFrustrationCondition(trigger.condition, response);
+  }
+
+  /**
+   * Evaluate frustration trigger conditions
+   */
+  private evaluateFrustrationCondition(condition: string, response: PlayerResponse): boolean {
+    switch (condition) {
+      case 'consecutive_evasions>=2':
+        return (this.consecutiveEvents.get('consecutive_evasions') || 0) >= 2;
+
+      case 'contradiction_severity>=major':
+        return response.contradictsPrevious === true;
+
+      case 'response_time>90_seconds':
+        // Would need actual response timing - placeholder for now
+        return false;
+
+      case 'deflection_count>=3':
+        return (this.consecutiveEvents.get('consecutive_deflection') || 0) >= 3;
+
+      case 'non_answer_pattern>=2':
+        return (this.consecutiveEvents.get('consecutive_evasive') || 0) >= 2;
+
+      case 'talks_over_interviewer>=2':
+        // Would need interruption tracking - placeholder for now
+        return false;
+
+      case 'avoids_factual_questions>=2':
+        return response.tone === 'evasive' && response.wordCount < 20;
+
+      case 'vague_policy_answers>=3':
+        return response.tone === 'evasive' && response.topic?.includes('policy');
+
+      // Background-specific conditions
+      case 'dismisses_victim_concerns':
+        return this.backgroundId === 'toeslagenaffaire-whistleblower' &&
+               (response.tone === 'defensive' || response.tone === 'evasive') &&
+               response.topic === 'victims';
+
+      case 'deflects_personal_accountability':
+        return this.backgroundId === 'toeslagenaffaire-whistleblower' &&
+               response.tone === 'deflective' &&
+               response.responseText.toLowerCase().includes('system');
+
+      case 'avoids_climate_responsibility':
+        return this.backgroundId === 'shell-executive' &&
+               response.tone === 'evasive' &&
+               response.topic === 'climate';
+
+      case 'uses_corporate_greenwashing':
+        return this.backgroundId === 'shell-executive' &&
+               (response.responseText.toLowerCase().includes('sustainability') ||
+                response.responseText.toLowerCase().includes('carbon neutral'));
+
+      case 'uses_political_speak>=2':
+        return this.backgroundId === 'former-politician' &&
+               (this.consecutiveEvents.get('consecutive_diplomatic') || 0) >= 2;
+
+      case 'deflects_past_failures':
+        return this.backgroundId === 'former-politician' &&
+               response.tone === 'deflective' &&
+               response.topic === 'experience';
+
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Execute frustration trigger and create event
+   */
+  private executeFrustrationTrigger(trigger: FrustrationTrigger, response: PlayerResponse, currentTime: number): FrustrationEvent | null {
+    const previousLevel = this.frustrationSystem.currentLevel;
+    const previousFrustration = this.memory.frustrationLevel;
+
+    // Increase frustration
+    const newFrustration = Math.min(this.frustrationSystem.maxFrustration,
+                                   previousFrustration + trigger.frustractionIncrease);
+    this.memory.frustrationLevel = newFrustration;
+
+    // Determine new frustration level
+    const newLevel = this.calculateFrustrationLevel(newFrustration);
+    const previousLevelValue = this.calculateFrustrationLevel(previousFrustration);
+
+    // Only create event if level actually changed
+    if (newLevel !== previousLevelValue) {
+      this.frustrationSystem.currentLevel = newLevel;
+
+      // Record trigger cooldown
+      this.enhancedMemory.triggerCooldowns.set(trigger.id, currentTime);
+
+      // Create frustration event
+      const event: FrustrationEvent = {
+        timestamp: currentTime,
+        trigger: trigger.type,
+        frustractionIncrease: trigger.frustractionIncrease,
+        previousLevel: previousLevelValue,
+        newLevel: newLevel,
+        playerResponse: response.responseText,
+        interviewerReaction: this.generateFrustrationReaction(newLevel, trigger.type)
+      };
+
+      // Add to history
+      this.enhancedMemory.frustrationHistory.push(event);
+      if (this.enhancedMemory.frustrationHistory.length > 20) {
+        this.enhancedMemory.frustrationHistory.shift(); // Keep recent history
+      }
+
+      // Update escalation pattern
+      this.updateEscalationPattern(trigger.type, newFrustration);
+
+      return event;
+    }
+
+    return null;
+  }
+
+  /**
+   * Calculate frustration level from numeric value
+   */
+  private calculateFrustrationLevel(frustration: number): FrustrationLevel {
+    if (frustration <= 20) return 'calm';
+    if (frustration <= 40) return 'mildly-annoyed';
+    if (frustration <= 60) return 'frustrated';
+    if (frustration <= 80) return 'very-frustrated';
+    if (frustration <= 95) return 'losing-patience';
+    return 'explosive';
+  }
+
+  /**
+   * Generate frustration-specific reaction message
+   */
+  private generateFrustrationReaction(level: FrustrationLevel, triggerType: FrustrationTriggerType): string {
+    const reactions: Record<FrustrationLevel, Record<FrustrationTriggerType, string[]>> = {
+      'mildly-annoyed': {
+        'evasion': ["That's not really an answer.", "Could you be more direct?", "I asked a specific question."],
+        'contradiction': ["Wait, that contradicts what you said before.", "Which version is correct?"],
+        'deflection': ["Let's stay on topic.", "You're deflecting from the question."],
+        'time-wasting': ["We don't have all day.", "Time is limited here."],
+        'non-answer': ["That's not answering the question.", "Could you actually address what I asked?"],
+        'interruption-resistance': ["Let me finish.", "You need to let me speak."],
+        'fact-avoidance': ["The facts matter here.", "Don't avoid the specifics."],
+        'policy-vagueness': ["Voters need specifics.", "That's too vague."],
+        'personal-attack': ["That's inappropriate.", "Keep this professional."],
+        'question-challenging': ["I'm asking the questions here.", "Answer the question."]
+      },
+      'frustrated': {
+        'evasion': ["Stop evading! Answer the question!", "This is the third time you've dodged this.", "Voters deserve straight answers!"],
+        'contradiction': ["You're contradicting yourself again!", "Which lie should we believe?", "Your story keeps changing!"],
+        'deflection': ["Stop deflecting and answer!", "You're running from every question!", "Classic politician deflection!"],
+        'time-wasting': ["You're wasting everyone's time!", "Answer the damn question!", "This isn't a filibuster!"],
+        'non-answer': ["That's complete nonsense!", "Give me a real answer!", "Word salad won't cut it!"],
+        'interruption-resistance': ["Don't talk over me!", "Show some respect!", "This is my interview!"],
+        'fact-avoidance': ["The facts don't lie, you do!", "Stop running from reality!", "Face the facts!"],
+        'policy-vagueness': ["Enough platitudes! Give specifics!", "Vague promises won't fool voters!", "What's your actual plan?"],
+        'personal-attack': ["How dare you!", "That's completely out of line!", "You've crossed the line!"],
+        'question-challenging': ["Don't question my questions!", "Answer or leave!", "This is journalism, not PR!"]
+      },
+      'very-frustrated': {
+        'evasion': ["I'VE HAD ENOUGH OF YOUR EVASION!", "ANSWER THE BLOODY QUESTION!", "YOU'RE A COWARD!"],
+        'contradiction': ["YOUR LIES ARE PATHETIC!", "STOP LYING TO MY FACE!", "WHICH VERSION IS THE LIE?"],
+        'deflection': ["STOP RUNNING AWAY!", "FACE THE QUESTION!", "YOU CAN'T HIDE FOREVER!"],
+        'time-wasting': ["YOU'RE INSULTING EVERYONE'S INTELLIGENCE!", "ENOUGH STALLING!", "TIME TO FACE REALITY!"],
+        'non-answer': ["THAT'S COMPLETE GARBAGE!", "INSULTING NONSENSE!", "DO YOU TAKE US FOR FOOLS?"],
+        'interruption-resistance': ["SHUT UP AND LISTEN!", "RESPECT THE PROCESS!", "THIS IS MY SHOW!"],
+        'fact-avoidance': ["THE TRUTH WILL COME OUT!", "STOP HIDING FROM FACTS!", "REALITY DOESN'T CARE ABOUT YOUR FEELINGS!"],
+        'policy-vagueness': ["MEANINGLESS GARBAGE!", "EMPTY POLITICAL NONSENSE!", "SAY SOMETHING REAL!"],
+        'personal-attack': ["UNACCEPTABLE!", "YOU'RE DISGRACEFUL!", "COMPLETELY INAPPROPRIATE!"],
+        'question-challenging': ["WHO DO YOU THINK YOU ARE?", "THIS IS MY INTERVIEW!", "ANSWER OR GET OUT!"]
+      },
+      'losing-patience': {
+        'evasion': ["ONE MORE EVASION AND THIS INTERVIEW IS OVER!", "LAST CHANCE TO ANSWER!", "YOU'RE TESTING MY PATIENCE!"],
+        'contradiction': ["YOUR CREDIBILITY IS SHOT!", "NOBODY BELIEVES YOU ANYMORE!", "STOP LYING OR LEAVE!"],
+        'deflection': ["FINAL WARNING: ANSWER THE QUESTION!", "I'M DONE WITH YOUR GAMES!", "ANSWER OR THIS ENDS NOW!"],
+        'time-wasting': ["THIS INTERVIEW IS ALMOST OVER!", "YOU'VE WASTED ENOUGH TIME!", "FINAL CHANCE!"],
+        'non-answer': ["THIS IS YOUR LAST CHANCE!", "SAY SOMETHING REAL OR LEAVE!", "I'M DONE WITH NONSENSE!"],
+        'interruption-resistance': ["INTERRUPT ME AGAIN AND WE'RE DONE!", "RESPECT OR LEAVE!", "FINAL WARNING!"],
+        'fact-avoidance': ["FACE REALITY OR GET OUT!", "THE TRUTH ENDS THIS!", "LAST CHANCE FOR HONESTY!"],
+        'policy-vagueness': ["SPECIFICS OR THIS ENDS!", "REAL ANSWERS OR LEAVE!", "ENOUGH EMPTY WORDS!"],
+        'personal-attack': ["THAT'S IT! ALMOST DONE HERE!", "UNFORGIVABLE!", "LAST STRAW!"],
+        'question-challenging': ["THAT'S ENOUGH! ANSWER OR LEAVE!", "I'M ENDING THIS!", "GET OUT!"]
+      },
+      'explosive': {
+        'evasion': ["THIS INTERVIEW IS OVER!", "GET OUT OF MY STUDIO!", "YOU'RE A DISGRACE!"],
+        'contradiction': ["LIAR! THIS INTERVIEW IS FINISHED!", "PATHETIC! GET OUT!", "CREDIBILITY ZERO!"],
+        'deflection': ["ENOUGH! YOU'RE DONE HERE!", "INTERVIEW TERMINATED!", "GET OUT NOW!"],
+        'time-wasting': ["TIME'S UP! YOU'RE FINISHED!", "WASTED EVERYONE'S TIME!", "INTERVIEW OVER!"],
+        'non-answer': ["INSULTING! GET OUT!", "ENOUGH GARBAGE! LEAVE!", "YOU'RE DONE!"],
+        'interruption-resistance': ["DISRESPECTFUL! LEAVE NOW!", "GET OUT OF HERE!", "INTERVIEW TERMINATED!"],
+        'fact-avoidance': ["TRUTH DENIER! GET OUT!", "REALITY ENDS THIS!", "YOU'RE FINISHED!"],
+        'policy-vagueness': ["EMPTY SUIT! LEAVE!", "MEANINGLESS! GET OUT!", "INTERVIEW OVER!"],
+        'personal-attack': ["COMPLETELY UNACCEPTABLE! LEAVE!", "DISGRACEFUL! GET OUT!", "INTERVIEW TERMINATED!"],
+        'question-challenging': ["HOW DARE YOU! GET OUT!", "INTERVIEW OVER!", "SECURITY!"]
+      },
+      'calm': {} as Record<FrustrationTriggerType, string[]>
+    };
+
+    const levelReactions = reactions[level] || {};
+    const triggerReactions = levelReactions[triggerType] || ["I'm getting frustrated with this."];
+    return triggerReactions[Math.floor(Math.random() * triggerReactions.length)];
+  }
+
+  /**
+   * Update escalation pattern tracking
+   */
+  private updateEscalationPattern(triggerType: FrustrationTriggerType, currentFrustration: number): void {
+    const pattern = this.enhancedMemory.escalationPattern;
+
+    // Track dominant triggers
+    const triggerIndex = pattern.dominantTriggers.indexOf(triggerType);
+    if (triggerIndex === -1) {
+      pattern.dominantTriggers.push(triggerType);
+    }
+
+    // Update peak frustration
+    pattern.peakFrustration = Math.max(pattern.peakFrustration, currentFrustration);
+
+    // Determine escalation speed based on history
+    const recentEvents = this.enhancedMemory.frustrationHistory.slice(-5);
+    if (recentEvents.length >= 3) {
+      const timeSpan = recentEvents[recentEvents.length - 1].timestamp - recentEvents[0].timestamp;
+      const avgIncrease = recentEvents.reduce((sum, event) => sum + event.frustractionIncrease, 0) / recentEvents.length;
+
+      if (timeSpan < 60000 && avgIncrease > 20) { // Less than 1 minute, high increases
+        pattern.escalationSpeed = 'explosive';
+      } else if (timeSpan < 180000 && avgIncrease > 15) { // Less than 3 minutes, medium increases
+        pattern.escalationSpeed = 'rapid';
+      } else if (avgIncrease > 10) {
+        pattern.escalationSpeed = 'moderate';
+      } else {
+        pattern.escalationSpeed = 'gradual';
+      }
+    }
+  }
+
+  /**
+   * Update behavior changes based on current frustration level
+   */
+  private updateFrustrationBehaviors(): void {
+    const currentLevel = this.frustrationSystem.currentLevel;
+
+    // Deactivate all behaviors first
+    this.frustrationSystem.behaviorChanges.forEach(behavior => {
+      behavior.active = false;
+    });
+
+    // Activate behaviors for current level and below
+    this.frustrationSystem.behaviorChanges.forEach(behavior => {
+      if (this.shouldActivateBehavior(behavior.frustractionLevel, currentLevel)) {
+        behavior.active = true;
+      }
+    });
+  }
+
+  /**
+   * Check if behavior should be activated for current frustration level
+   */
+  private shouldActivateBehavior(behaviorLevel: FrustrationLevel, currentLevel: FrustrationLevel): boolean {
+    const levelOrder: FrustrationLevel[] = ['calm', 'mildly-annoyed', 'frustrated', 'very-frustrated', 'losing-patience', 'explosive'];
+    const behaviorIndex = levelOrder.indexOf(behaviorLevel);
+    const currentIndex = levelOrder.indexOf(currentLevel);
+    return currentIndex >= behaviorIndex;
+  }
+
+  /**
+   * Apply natural frustration decay over time
+   */
+  private applyFrustrationDecay(): void {
+    if (this.memory.frustrationLevel > 0) {
+      // Decay rate: 5 points per minute (approximately per response)
+      const decay = this.frustrationSystem.decayRate;
+      this.memory.frustrationLevel = Math.max(0, this.memory.frustrationLevel - decay);
+
+      // Update level if changed
+      const newLevel = this.calculateFrustrationLevel(this.memory.frustrationLevel);
+      if (newLevel !== this.frustrationSystem.currentLevel) {
+        this.frustrationSystem.currentLevel = newLevel;
+        this.updateFrustrationBehaviors();
+      }
+    }
+  }
+
+  /**
+   * Get current frustration system state
+   */
+  getFrustrationState(): {
+    level: FrustrationLevel;
+    value: number;
+    activeBehaviors: string[];
+    recentTriggers: FrustrationTriggerType[];
+    escalationPattern: FrustrationPattern;
+  } {
+    return {
+      level: this.frustrationSystem.currentLevel,
+      value: this.memory.frustrationLevel,
+      activeBehaviors: this.frustrationSystem.behaviorChanges
+        .filter(b => b.active)
+        .map(b => b.id),
+      recentTriggers: this.enhancedMemory.frustrationHistory
+        .slice(-5)
+        .map(event => event.trigger),
+      escalationPattern: { ...this.enhancedMemory.escalationPattern }
+    };
   }
 
   /**
@@ -1068,6 +1823,78 @@ export class InterviewerPersonality {
     // Process enhanced mood progression
     const moodChange = this.processMoodProgression(response);
 
+    // Process frustration escalation - Task 3.7
+    const frustrationEvent = this.processFrustrationEscalation(response);
+
+    // Process surprise/approval reactions - Task 3.8
+    const surpriseEvent = this.detectSurpriseReaction(response);
+    const approvalEvent = this.detectApprovalReaction(response);
+
+    // Prioritize reactions: High surprise/approval > High frustration > Normal patterns
+    
+    // High-intensity surprise or approval reactions take priority
+    if (surpriseEvent && surpriseEvent.intensity === 'high') {
+      const surpriseReaction: InterviewerReaction = {
+        type: 'surprise',
+        intensity: surpriseEvent.intensity,
+        message: surpriseEvent.message,
+        newMood: this.getMoodForPositiveReaction('surprise')
+      };
+      this.recordSurpriseApprovalEvent(surpriseEvent);
+      this.lastReaction = surpriseReaction;
+      return surpriseReaction;
+    }
+
+    if (approvalEvent && approvalEvent.intensity === 'high') {
+      const approvalReaction: InterviewerReaction = {
+        type: 'approval',
+        intensity: approvalEvent.intensity,
+        message: approvalEvent.message,
+        newMood: this.getMoodForPositiveReaction('approval')
+      };
+      this.recordSurpriseApprovalEvent(approvalEvent);
+      this.lastReaction = approvalReaction;
+      return approvalReaction;
+    }
+
+    // If frustration escalated significantly, prioritize frustration reaction
+    if (frustrationEvent &&
+        ['very-frustrated', 'losing-patience', 'explosive'].includes(frustrationEvent.newLevel)) {
+      const frustrationReaction: InterviewerReaction = {
+        type: 'interruption',
+        intensity: 'high',
+        message: frustrationEvent.interviewerReaction,
+        newMood: this.getMoodForFrustrationLevel(frustrationEvent.newLevel)
+      };
+      this.lastReaction = frustrationReaction;
+      return frustrationReaction;
+    }
+
+    // Medium-intensity surprise or approval reactions
+    if (surpriseEvent && surpriseEvent.intensity === 'medium') {
+      const surpriseReaction: InterviewerReaction = {
+        type: 'surprise',
+        intensity: surpriseEvent.intensity,
+        message: surpriseEvent.message,
+        newMood: this.getMoodForPositiveReaction('surprise')
+      };
+      this.recordSurpriseApprovalEvent(surpriseEvent);
+      this.lastReaction = surpriseReaction;
+      return surpriseReaction;
+    }
+
+    if (approvalEvent && approvalEvent.intensity === 'medium') {
+      const approvalReaction: InterviewerReaction = {
+        type: 'approval',
+        intensity: approvalEvent.intensity,
+        message: approvalEvent.message,
+        newMood: this.getMoodForPositiveReaction('approval')
+      };
+      this.recordSurpriseApprovalEvent(approvalEvent);
+      this.lastReaction = approvalReaction;
+      return approvalReaction;
+    }
+
     // Check if any reaction patterns match
     for (const pattern of this.reactionPatterns) {
       if (this.matchesPattern(pattern, response)) {
@@ -1076,7 +1903,61 @@ export class InterviewerPersonality {
         return reaction;
       }
     }
+
+    // Low-intensity surprise or approval reactions (if no patterns matched)
+    if (surpriseEvent && surpriseEvent.intensity === 'low') {
+      const surpriseReaction: InterviewerReaction = {
+        type: 'surprise',
+        intensity: surpriseEvent.intensity,
+        message: surpriseEvent.message,
+        newMood: this.getMoodForPositiveReaction('surprise')
+      };
+      this.recordSurpriseApprovalEvent(surpriseEvent);
+      this.lastReaction = surpriseReaction;
+      return surpriseReaction;
+    }
+
+    if (approvalEvent && approvalEvent.intensity === 'low') {
+      const approvalReaction: InterviewerReaction = {
+        type: 'approval',
+        intensity: approvalEvent.intensity,
+        message: approvalEvent.message,
+        newMood: this.getMoodForPositiveReaction('approval')
+      };
+      this.recordSurpriseApprovalEvent(approvalEvent);
+      this.lastReaction = approvalReaction;
+      return approvalReaction;
+    }
+
+    // If mild frustration escalation occurred, incorporate it into response
+    if (frustrationEvent &&
+        ['mildly-annoyed', 'frustrated'].includes(frustrationEvent.newLevel)) {
+      const frustrationReaction: InterviewerReaction = {
+        type: 'follow-up',
+        intensity: 'medium',
+        message: frustrationEvent.interviewerReaction,
+        newMood: this.getMoodForFrustrationLevel(frustrationEvent.newLevel)
+      };
+      this.lastReaction = frustrationReaction;
+      return frustrationReaction;
+    }
+
     return null;
+  }
+
+  /**
+   * Map frustration level to appropriate interviewer mood
+   */
+  private getMoodForFrustrationLevel(level: FrustrationLevel): InterviewerMood {
+    const moodMap: Record<FrustrationLevel, InterviewerMood> = {
+      'calm': 'professional',
+      'mildly-annoyed': 'skeptical',
+      'frustrated': 'frustrated',
+      'very-frustrated': 'hostile',
+      'losing-patience': 'hostile',
+      'explosive': 'hostile'
+    };
+    return moodMap[level] || 'frustrated';
   }
 
   private matchesPattern(pattern: ReactionPattern, response: PlayerResponse): boolean {
@@ -1411,6 +2292,523 @@ export class InterviewerPersonality {
   }
 
   // Overall assessment for aftermath generation
+  /**
+   * Initialize Surprise/Approval System - Task 3.8
+   */
+  private initializeSurpriseApprovalSystem(): SurpriseApprovalSystem {
+    return {
+      surpriseDetectors: [
+        {
+          type: 'unexpected-expertise',
+          patterns: [
+            /technical|technical details|implementation|architecture|specific numbers|data/i,
+            /\b\d+%|\b\d+\.\d+|\bexactly\b|\bprecisely\b/i
+          ],
+          minWordCount: 25,
+          conditions: ['detailed_knowledge', 'specific_data']
+        },
+        {
+          type: 'authentic-vulnerability',
+          patterns: [
+            /honest|honestly|admit|mistake|wrong|failed|struggle|difficult/i,
+            /personal|family|affected me|learned from|changed my mind/i
+          ],
+          minWordCount: 15,
+          conditions: ['personal_admission', 'emotional_honesty']
+        },
+        {
+          type: 'unexpected-wit',
+          patterns: [
+            /\bhaha\b|\bhehe\b|clever|witty|ironic|paradox/i,
+            /metaphor|analogy|like saying|imagine if/i
+          ],
+          minWordCount: 10,
+          conditions: ['humor_present', 'creative_expression']
+        },
+        {
+          type: 'sophisticated-nuance',
+          patterns: [
+            /however|but also|on the other hand|both.*and|complex|nuanced/i,
+            /depends on|context|situation|balance|trade.?off/i
+          ],
+          minWordCount: 20,
+          conditions: ['acknowledges_complexity', 'multiple_perspectives']
+        },
+        {
+          type: 'unexpected-passion',
+          patterns: [
+            /deeply|passionate|care about|matters to me|fight for|believe/i,
+            /!\s*[A-Z]|!!|absolutely|fundamentally|essential/i
+          ],
+          minWordCount: 15,
+          conditions: ['emotional_intensity', 'strong_conviction']
+        },
+        {
+          type: 'disarming-honesty',
+          patterns: [
+            /don't know|not sure|haven't figured out|still learning/i,
+            /good question|you're right|fair point|I see what you mean/i
+          ],
+          minWordCount: 8,
+          conditions: ['intellectual_humility', 'openness_to_challenge']
+        },
+        {
+          type: 'strategic-insight',
+          patterns: [
+            /long.?term|strategy|systematic|root cause|underlying/i,
+            /if we.*then|this leads to|ripple effect|unintended consequence/i
+          ],
+          minWordCount: 20,
+          conditions: ['strategic_thinking', 'systems_perspective']
+        },
+        {
+          type: 'moral-clarity',
+          patterns: [
+            /right thing|principle|values|ethics|moral|justice/i,
+            /regardless of.*cost|even if.*unpopular|stand for/i
+          ],
+          minWordCount: 15,
+          conditions: ['clear_values', 'principled_stance']
+        }
+      ],
+      approvalDetectors: [
+        {
+          type: 'principled-stance',
+          patterns: [
+            /principle|values|believe|stand for|conviction|moral/i,
+            /regardless of.*pressure|even if.*difficult|right thing/i
+          ],
+          minWordCount: 20,
+          conditions: ['clear_principles', 'unwavering_stance']
+        },
+        {
+          type: 'thoughtful-nuance',
+          patterns: [
+            /complex|nuanced|both.*and|depends|context|balance/i,
+            /trade.?off|consider|multiple.*factor|various.*perspective/i
+          ],
+          minWordCount: 25,
+          conditions: ['sophisticated_analysis', 'multiple_considerations']
+        },
+        {
+          type: 'practical-wisdom',
+          patterns: [
+            /realistic|practical|feasible|workable|experience shows/i,
+            /in practice|real world|what actually works|evidence suggests/i
+          ],
+          minWordCount: 20,
+          conditions: ['pragmatic_approach', 'evidence_based']
+        },
+        {
+          type: 'authentic-emotion',
+          patterns: [
+            /personal|family|affected|touched|moved|inspired/i,
+            /care deeply|matters to me|seen firsthand|experienced/i
+          ],
+          minWordCount: 15,
+          conditions: ['personal_connection', 'emotional_authenticity']
+        },
+        {
+          type: 'intellectual-courage',
+          patterns: [
+            /unpopular|difficult|challenge|question|reconsider/i,
+            /even though|despite.*pressure|willing to.*examine/i
+          ],
+          minWordCount: 18,
+          conditions: ['challenges_orthodoxy', 'independent_thinking']
+        },
+        {
+          type: 'empathetic-insight',
+          patterns: [
+            /understand|perspective|feel|struggle|difficult for/i,
+            /put myself|imagine|empathize|relate to|see how/i
+          ],
+          minWordCount: 15,
+          conditions: ['shows_empathy', 'multiple_perspectives']
+        },
+        {
+          type: 'collaborative-spirit',
+          patterns: [
+            /work together|collaborate|find.*solution|bridge|common ground/i,
+            /we can|let's.*find|together we|build consensus/i
+          ],
+          minWordCount: 12,
+          conditions: ['seeks_cooperation', 'solution_oriented']
+        },
+        {
+          type: 'informed-expertise',
+          patterns: [
+            /research shows|studies indicate|data suggests|evidence/i,
+            /expert|specialist|analysis|thorough.*examination/i
+          ],
+          minWordCount: 20,
+          conditions: ['cites_evidence', 'demonstrates_knowledge']
+        }
+      ],
+      reactionMessages: {
+        'unexpected-expertise': [
+          "Well, that's... surprisingly detailed. You've clearly done your homework.",
+          "I wasn't expecting that level of technical knowledge. Interesting.",
+          "That's a much more sophisticated answer than I anticipated."
+        ],
+        'authentic-vulnerability': [
+          "That's... refreshingly honest. Most politicians wouldn't admit that.",
+          "I appreciate that candor. That's not what I usually hear in these interviews.",
+          "Well, that's unexpected. Thank you for being so direct about it."
+        ],
+        'unexpected-wit': [
+          "Ha! That's... actually quite clever. I wasn't expecting that.",
+          "Well played. That's a refreshing way to put it.",
+          "I have to admit, that's a pretty good analogy."
+        ],
+        'sophisticated-nuance': [
+          "That's a more nuanced position than I expected. Interesting.",
+          "You're acknowledging the complexity here. That's... refreshing.",
+          "Most people give me black and white answers. This is more thoughtful."
+        ],
+        'unexpected-passion': [
+          "I can see this really matters to you. That's... compelling.",
+          "There's real conviction behind that answer. I wasn't expecting that intensity.",
+          "Your passion on this issue is quite evident. And convincing."
+        ],
+        'disarming-honesty': [
+          "That's... surprisingly candid. I respect that honesty.",
+          "Well, at least you're being straight with me. That's rare.",
+          "I appreciate you not trying to bluff your way through that."
+        ],
+        'strategic-insight': [
+          "That's... actually quite insightful. You're thinking systematically about this.",
+          "I'm impressed by that strategic perspective. Most miss those connections.",
+          "That shows real understanding of the broader implications."
+        ],
+        'moral-clarity': [
+          "That's a clear moral position. I respect that kind of clarity.",
+          "You're willing to take a stand on principle. That's... admirable.",
+          "I can see where you draw your ethical lines. That's refreshing."
+        ],
+        'principled-stance': [
+          "I respect that principled position, even if I might disagree.",
+          "That's a clear stance based on your values. I can appreciate that.",
+          "You're willing to stand by your convictions. That's admirable."
+        ],
+        'thoughtful-nuance': [
+          "That's exactly the kind of thoughtful analysis this issue deserves.",
+          "I'm impressed by how thoroughly you've considered the trade-offs.",
+          "That nuanced understanding is exactly what we need more of."
+        ],
+        'practical-wisdom': [
+          "That's pragmatic thinking. I appreciate the realistic approach.",
+          "You understand how things actually work. That's valuable perspective.",
+          "That's the kind of practical wisdom that makes good policy."
+        ],
+        'authentic-emotion': [
+          "I can see this issue touches you personally. That authenticity is powerful.",
+          "Thank you for sharing that personal connection. It adds real weight.",
+          "That personal experience brings important perspective to this debate."
+        ],
+        'intellectual-courage': [
+          "That takes intellectual courage to challenge conventional thinking.",
+          "I respect your willingness to question popular assumptions.",
+          "That's brave thinking. Not everyone is willing to examine difficult questions."
+        ],
+        'empathetic-insight': [
+          "You clearly understand multiple perspectives on this. That's valuable.",
+          "I appreciate how you're considering different viewpoints here.",
+          "That empathetic understanding is exactly what this debate needs."
+        ],
+        'collaborative-spirit': [
+          "That collaborative approach is refreshing in today's political climate.",
+          "I appreciate your focus on finding common ground.",
+          "That solution-oriented thinking is what we need more of."
+        ],
+        'informed-expertise': [
+          "You clearly know your subject matter. That expertise shows.",
+          "I'm impressed by the depth of your knowledge on this issue.",
+          "That evidence-based approach is exactly what good policy requires."
+        ]
+      }
+    };
+  }
+
+  /**
+   * Detect surprise reactions in player responses
+   */
+  private detectSurpriseReaction(response: PlayerResponse): SurpriseApprovalEvent | null {
+    for (const detector of this.surpriseApprovalSystem.surpriseDetectors) {
+      // Check word count threshold
+      if (response.wordCount < detector.minWordCount) continue;
+
+      // Check if any patterns match
+      const patternMatches = detector.patterns.some(pattern => 
+        pattern.test(response.responseText)
+      );
+
+      if (!patternMatches) continue;
+
+      // Check additional conditions
+      const conditionsMet = this.evaluateSurpriseConditions(detector.conditions, response);
+      if (!conditionsMet) continue;
+
+      // Generate surprise event
+      const messages = this.surpriseApprovalSystem.reactionMessages[detector.type];
+      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+
+      return {
+        type: 'surprise',
+        subtype: detector.type,
+        intensity: this.calculateSurpriseIntensity(detector.type, response),
+        message: randomMessage,
+        timestamp: Date.now(),
+        triggeredBy: response.questionId
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Detect approval reactions in player responses
+   */
+  private detectApprovalReaction(response: PlayerResponse): SurpriseApprovalEvent | null {
+    for (const detector of this.surpriseApprovalSystem.approvalDetectors) {
+      // Check word count threshold
+      if (response.wordCount < detector.minWordCount) continue;
+
+      // Check if any patterns match
+      const patternMatches = detector.patterns.some(pattern => 
+        pattern.test(response.responseText)
+      );
+
+      if (!patternMatches) continue;
+
+      // Check additional conditions
+      const conditionsMet = this.evaluateApprovalConditions(detector.conditions, response);
+      if (!conditionsMet) continue;
+
+      // Generate approval event
+      const messages = this.surpriseApprovalSystem.reactionMessages[detector.type];
+      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+
+      return {
+        type: 'approval',
+        subtype: detector.type,
+        intensity: this.calculateApprovalIntensity(detector.type, response),
+        message: randomMessage,
+        timestamp: Date.now(),
+        triggeredBy: response.questionId
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Evaluate surprise-specific conditions
+   */
+  private evaluateSurpriseConditions(conditions: string[], response: PlayerResponse): boolean {
+    return conditions.every(condition => {
+      switch (condition) {
+        case 'detailed_knowledge':
+          return /specific|exact|precisely|technical|data|research|study|analysis/i.test(response.responseText);
+        case 'specific_data':
+          return /\d+|\bpercent\b|\brate\b|\bstatistic\b|\bevidence\b/i.test(response.responseText);
+        case 'personal_admission':
+          return /I|my|me|personal|family|own/i.test(response.responseText);
+        case 'emotional_honesty':
+          return /feel|felt|emotion|struggle|difficult|challenge/i.test(response.responseText);
+        case 'humor_present':
+          return /\bhaha\b|\bhehe\b|funny|ironic|amusing|clever/i.test(response.responseText);
+        case 'creative_expression':
+          return /like|metaphor|analogy|imagine|picture|example/i.test(response.responseText);
+        case 'acknowledges_complexity':
+          return /complex|complicated|nuanced|both|however|but/i.test(response.responseText);
+        case 'multiple_perspectives':
+          return /perspective|viewpoint|side|angle|different|various/i.test(response.responseText);
+        case 'emotional_intensity':
+          return /!|passionate|deeply|strongly|absolutely|essential/i.test(response.responseText);
+        case 'strong_conviction':
+          return /believe|conviction|principle|stand|fight|defend/i.test(response.responseText);
+        case 'intellectual_humility':
+          return /don't know|not sure|uncertain|learning|figuring/i.test(response.responseText);
+        case 'openness_to_challenge':
+          return /good point|you're right|fair|understand|see|consider/i.test(response.responseText);
+        case 'strategic_thinking':
+          return /strategy|long.?term|plan|system|structure|consequence/i.test(response.responseText);
+        case 'systems_perspective':
+          return /connect|relationship|impact|effect|influence|ripple/i.test(response.responseText);
+        case 'clear_values':
+          return /value|principle|ethic|moral|right|wrong|justice/i.test(response.responseText);
+        case 'principled_stance':
+          return /stand|principle|conviction|believe|value|moral/i.test(response.responseText);
+        default:
+          return true;
+      }
+    });
+  }
+
+  /**
+   * Evaluate approval-specific conditions
+   */
+  private evaluateApprovalConditions(conditions: string[], response: PlayerResponse): boolean {
+    return conditions.every(condition => {
+      switch (condition) {
+        case 'clear_principles':
+          return /principle|value|conviction|believe|stand|moral/i.test(response.responseText);
+        case 'unwavering_stance':
+          return /regardless|even if|despite|stand firm|won't change/i.test(response.responseText);
+        case 'sophisticated_analysis':
+          return /analysis|consider|factor|aspect|element|component/i.test(response.responseText);
+        case 'multiple_considerations':
+          return /multiple|various|different|several|many|range/i.test(response.responseText);
+        case 'pragmatic_approach':
+          return /practical|realistic|feasible|workable|viable|doable/i.test(response.responseText);
+        case 'evidence_based':
+          return /evidence|data|research|study|fact|proof|show/i.test(response.responseText);
+        case 'personal_connection':
+          return /personal|family|my|I|me|own|experience|lived/i.test(response.responseText);
+        case 'emotional_authenticity':
+          return /feel|emotion|touch|move|affect|impact|matter/i.test(response.responseText);
+        case 'challenges_orthodoxy':
+          return /challenge|question|rethink|reconsider|different|alternative/i.test(response.responseText);
+        case 'independent_thinking':
+          return /think|believe|consider|opinion|view|perspective/i.test(response.responseText);
+        case 'shows_empathy':
+          return /understand|feel|empathize|relate|connect|compassion/i.test(response.responseText);
+        case 'seeks_cooperation':
+          return /together|collaborate|work with|partner|unite|join/i.test(response.responseText);
+        case 'solution_oriented':
+          return /solution|solve|fix|address|resolve|answer/i.test(response.responseText);
+        case 'cites_evidence':
+          return /research|study|data|evidence|fact|statistic|analysis/i.test(response.responseText);
+        case 'demonstrates_knowledge':
+          return /know|understand|expertise|experience|familiar|aware/i.test(response.responseText);
+        default:
+          return true;
+      }
+    });
+  }
+
+  /**
+   * Calculate surprise intensity based on type and response characteristics
+   */
+  private calculateSurpriseIntensity(type: SurpriseType, response: PlayerResponse): 'low' | 'medium' | 'high' {
+    let baseIntensity = 'medium' as 'low' | 'medium' | 'high';
+
+    // High surprise types
+    if (['unexpected-expertise', 'strategic-insight', 'moral-clarity'].includes(type)) {
+      baseIntensity = 'high';
+    }
+    
+    // Low surprise types
+    if (['disarming-honesty', 'unexpected-wit'].includes(type)) {
+      baseIntensity = 'low';
+    }
+
+    // Adjust based on response characteristics
+    if (response.wordCount > 50) {
+      baseIntensity = baseIntensity === 'low' ? 'medium' : 'high';
+    }
+
+    if (response.tone === 'confident' || response.tone === 'passionate') {
+      baseIntensity = baseIntensity === 'low' ? 'medium' : 'high';
+    }
+
+    return baseIntensity;
+  }
+
+  /**
+   * Calculate approval intensity based on type and response characteristics
+   */
+  private calculateApprovalIntensity(type: ApprovalType, response: PlayerResponse): 'low' | 'medium' | 'high' {
+    let baseIntensity = 'medium' as 'low' | 'medium' | 'high';
+
+    // High approval types
+    if (['principled-stance', 'intellectual-courage', 'informed-expertise'].includes(type)) {
+      baseIntensity = 'high';
+    }
+    
+    // Low approval types  
+    if (['collaborative-spirit', 'empathetic-insight'].includes(type)) {
+      baseIntensity = 'low';
+    }
+
+    // Adjust based on response characteristics
+    if (response.wordCount > 40) {
+      baseIntensity = baseIntensity === 'low' ? 'medium' : 'high';
+    }
+
+    if (response.tone === 'principled' || response.tone === 'passionate') {
+      baseIntensity = baseIntensity === 'low' ? 'medium' : 'high';
+    }
+
+    return baseIntensity;
+  }
+
+  /**
+   * Record surprise/approval events in enhanced memory
+   */
+  private recordSurpriseApprovalEvent(event: SurpriseApprovalEvent): void {
+    if (!this.enhancedMemory.surpriseApprovalHistory) {
+      this.enhancedMemory.surpriseApprovalHistory = [];
+    }
+    
+    this.enhancedMemory.surpriseApprovalHistory.push(event);
+
+    // Update approval/surprise levels in memory
+    if (event.type === 'surprise') {
+      this.memory.surpriseLevel = Math.min(100, this.memory.surpriseLevel + 10);
+    } else if (event.type === 'approval') {
+      this.memory.approvalLevel = Math.min(100, this.memory.approvalLevel + 15);
+    }
+
+    // Limit history to last 20 events for performance
+    if (this.enhancedMemory.surpriseApprovalHistory.length > 20) {
+      this.enhancedMemory.surpriseApprovalHistory = this.enhancedMemory.surpriseApprovalHistory.slice(-20);
+    }
+  }
+
+  /**
+   * Get appropriate mood for positive reactions
+   */
+  private getMoodForPositiveReaction(reactionType: 'surprise' | 'approval'): InterviewerMood {
+    if (reactionType === 'surprise') {
+      return 'surprised';
+    } else if (reactionType === 'approval') {
+      return 'approving';
+    }
+    return this.mood; // fallback to current mood
+  }
+
+  /**
+   * Get current surprise/approval state for UI
+   */
+  getSurpriseApprovalState(): {
+    surpriseLevel: number;
+    approvalLevel: number;
+    recentEvents: SurpriseApprovalEvent[];
+    dominantType: 'surprise' | 'approval' | 'neutral';
+  } {
+    const recentEvents = this.enhancedMemory.surpriseApprovalHistory?.slice(-5) || [];
+    
+    // Determine dominant reaction type from recent events
+    const surpriseCount = recentEvents.filter(e => e.type === 'surprise').length;
+    const approvalCount = recentEvents.filter(e => e.type === 'approval').length;
+    
+    let dominantType: 'surprise' | 'approval' | 'neutral' = 'neutral';
+    if (surpriseCount > approvalCount) {
+      dominantType = 'surprise';
+    } else if (approvalCount > surpriseCount) {
+      dominantType = 'approval';
+    }
+
+    return {
+      surpriseLevel: this.memory.surpriseLevel,
+      approvalLevel: this.memory.approvalLevel,
+      recentEvents,
+      dominantType
+    };
+  }
+
   getOverallAssessment(): {
     mood: InterviewerMood;
     frustration: number;

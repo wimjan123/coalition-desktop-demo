@@ -15,7 +15,13 @@ import type {
   RapidFireSession,
   RapidFireQuestion,
   RapidFireTrigger,
-  RapidFireConfig
+  RapidFireConfig,
+  GotchaMoment,
+  GotchaMomentType,
+  GotchaEvidence,
+  GotchaDetection,
+  GotchaResponse,
+  GotchaResponseConfig
 } from '../types/interview.js';
 
 import type { InterviewerPersonality } from './InterviewerPersonality.js';
@@ -31,11 +37,17 @@ export class ConversationFlow {
   private rapidFireSession: RapidFireSession | null = null;
   private lastRapidFireTime: number = 0;
   private rapidFireConfig: RapidFireConfig;
+  private gotchaHistory: GotchaMoment[] = [];
+  private lastGotchaTime: number = 0;
+  private gotchaDetection: GotchaDetection;
+  private gotchaResponseConfig: GotchaResponseConfig;
 
   constructor(personality: InterviewerPersonality, questionArc: QuestionArc) {
     this.personality = personality;
     this.questionArc = questionArc;
     this.rapidFireConfig = this.initializeRapidFireConfig();
+    this.gotchaDetection = this.initializeGotchaDetection();
+    this.gotchaResponseConfig = this.initializeGotchaResponseConfig();
   }
 
   /**
@@ -54,37 +66,43 @@ export class ConversationFlow {
       return interruption;
     }
 
-    // 2. Check for rapid-fire triggers (before memory follow-ups)
+    // 2. Check for gotcha moments (highest priority after interruptions)
+    const gotchaMoment = this.detectGotchaMoment(playerResponse, state);
+    if (gotchaMoment) {
+      return this.handleGotchaMoment(gotchaMoment, playerResponse, state);
+    }
+
+    // 3. Check for rapid-fire triggers (before memory follow-ups)
     const rapidFireTrigger = this.checkForRapidFireTrigger(playerResponse, state);
     if (rapidFireTrigger) {
       this.startRapidFireSession(rapidFireTrigger, playerResponse, state);
       return this.handleRapidFireSession(playerResponse, state);
     }
 
-    // 3. Check for memory-based follow-ups (high priority)
+    // 4. Check for memory-based follow-ups (high priority)
     const memoryFollowUp = this.checkForMemoryBasedFollowUp(playerResponse, state);
     if (memoryFollowUp) {
       return memoryFollowUp;
     }
 
-    // 4. Check for rapid follow-ups based on response content
+    // 5. Check for rapid follow-ups based on response content
     const followUp = this.checkForFollowUp(playerResponse, state);
     if (followUp) {
       return followUp;
     }
 
-    // 5. Check for contradiction challenges
+    // 6. Check for contradiction challenges
     const contradictionChallenge = this.checkForContradictionChallenge(playerResponse, state);
     if (contradictionChallenge) {
       return contradictionChallenge;
     }
 
-    // 6. Check if we should conclude the interview
+    // 7. Check if we should conclude the interview
     if (this.shouldConclude(state)) {
       return this.generateConclusion(state);
     }
 
-    // 7. Progress to next planned question
+    // 8. Progress to next planned question
     return this.getNextPlannedQuestion(state);
   }
 
@@ -1167,6 +1185,583 @@ export class ConversationFlow {
   }
 
   /**
+   * Initialize gotcha detection configuration
+   */
+  private initializeGotchaDetection(): GotchaDetection {
+    return {
+      enabled: true,
+      sensitivityLevel: 'medium',
+      trackingPeriod: 10, // Look back 10 minutes for contradictions
+      minimumSeverity: 'minor',
+      dramaticThreshold: 70, // Show dramatic UI for impact >= 70
+      cooldownPeriod: 20 // 20 seconds between gotcha moments
+    };
+  }
+
+  /**
+   * Initialize gotcha response configuration
+   */
+  private initializeGotchaResponseConfig(): GotchaResponseConfig {
+    return {
+      confrontationMessages: {
+        'direct-contradiction': {
+          'gentle': [
+            "I'm confused - didn't you just say the opposite?",
+            "Help me understand - that seems to contradict your earlier statement.",
+            "Can you clarify this apparent inconsistency?"
+          ],
+          'firm': [
+            "Hold on - you said the exact opposite just minutes ago.",
+            "That directly contradicts what you told me earlier.",
+            "You can't have it both ways - which statement is true?"
+          ],
+          'aggressive': [
+            "Stop right there. You're contradicting yourself.",
+            "That's a complete flip-flop from what you said earlier!",
+            "You just changed your entire position. Why should voters trust you?"
+          ],
+          'devastating': [
+            "You've just contradicted your core campaign promise.",
+            "This contradiction undermines everything you've said tonight.",
+            "You've exposed yourself as fundamentally inconsistent."
+          ]
+        },
+        'expertise-fail': {
+          'gentle': [
+            "That's surprising - isn't this your area of expertise?",
+            "I expected you'd have a stronger grasp of this topic.",
+            "This seems like something you should know well."
+          ],
+          'firm': [
+            "You claim expertise in this area, but that answer suggests otherwise.",
+            "If you don't understand this basic concept, how can you lead on it?",
+            "Your background suggests you should know this inside and out."
+          ],
+          'aggressive': [
+            "You've built your entire career on this - how do you not know this?",
+            "This is supposed to be your specialty. What are you hiding?",
+            "Your credentials are meaningless if you can't answer basic questions."
+          ],
+          'devastating': [
+            "You've been exposed as a fraud in your own field.",
+            "This incompetence disqualifies you from office.",
+            "Voters deserve someone who actually understands what they're talking about."
+          ]
+        },
+        'policy-flip': {
+          'gentle': [
+            "That's quite different from your previous position.",
+            "When did your thinking on this issue change?",
+            "This represents a significant shift in your policy stance."
+          ],
+          'firm': [
+            "You've completely reversed your position on this critical issue.",
+            "This is a major policy flip-flop. What changed your mind?",
+            "Your consistency on core issues is being questioned."
+          ],
+          'aggressive': [
+            "You've betrayed your own principles with this flip-flop!",
+            "This opportunistic position change reeks of political calculation.",
+            "You'll say anything to get elected, won't you?"
+          ],
+          'devastating': [
+            "This flip-flop destroys your credibility on your signature issue.",
+            "You've abandoned the principles that got you this far.",
+            "This political opportunism is exactly what's wrong with politics."
+          ]
+        },
+        'moral-inconsistency': {
+          'gentle': [
+            "That seems inconsistent with your stated values.",
+            "How do you reconcile this with your moral principles?",
+            "This appears to conflict with your ethical framework."
+          ],
+          'firm': [
+            "Your actions don't match your moral rhetoric.",
+            "You preach one thing but practice another.",
+            "This hypocrisy undermines your moral authority."
+          ],
+          'aggressive': [
+            "You're a hypocrite who doesn't live by your own rules!",
+            "Your moral preaching is hollow when you act like this.",
+            "You've lost all moral credibility with this behavior."
+          ],
+          'devastating': [
+            "This moral bankruptcy disqualifies you from leadership.",
+            "You've exposed yourself as ethically bankrupt.",
+            "No one can trust someone with such flexible morality."
+          ]
+        },
+        'fact-error': {
+          'gentle': [
+            "I think you might have the facts wrong there.",
+            "That doesn't match the data I'm seeing.",
+            "Are you sure about those numbers?"
+          ],
+          'firm': [
+            "That's factually incorrect.",
+            "Those numbers are completely wrong.",
+            "You're spreading misinformation."
+          ],
+          'aggressive': [
+            "That's absolutely false and you know it!",
+            "Stop spreading lies to our viewers.",
+            "You're deliberately misleading people with false information."
+          ],
+          'devastating': [
+            "You've been caught spreading dangerous misinformation.",
+            "Your relationship with truth is fundamentally broken.",
+            "This pattern of lies makes you unfit for office."
+          ]
+        },
+        'evasion-pattern': {
+          'gentle': [
+            "You seem to avoid this topic consistently.",
+            "Why is this particular issue difficult for you to address?",
+            "There's a pattern of evasion here that concerns me."
+          ],
+          'firm': [
+            "You keep dodging this question. What are you hiding?",
+            "Your evasion pattern suggests you have something to hide.",
+            "Stop running from this issue and give voters an answer."
+          ],
+          'aggressive': [
+            "Your cowardly evasions expose your weakness on this issue!",
+            "You're afraid to tell voters the truth about your real position.",
+            "This pathetic dodging shows you're unfit to lead."
+          ],
+          'devastating': [
+            "Your systematic deception on this issue disqualifies you.",
+            "This pattern of dishonesty makes you unworthy of public trust.",
+            "Voters deserve better than someone who can't tell the truth."
+          ]
+        },
+        'false-credential': {
+          'gentle': [
+            "I'm not sure your experience quite matches that claim.",
+            "That seems like an overstatement of your background.",
+            "Can you clarify exactly what experience you're referring to?"
+          ],
+          'firm': [
+            "That's not accurate. Your record doesn't support that claim.",
+            "You're exaggerating your qualifications.",
+            "That's a misleading characterization of your experience."
+          ],
+          'aggressive': [
+            "You're lying about your credentials!",
+            "You've been caught inflating your resume.",
+            "Stop fabricating your qualifications!"
+          ],
+          'devastating': [
+            "You've been exposed as a fraud who lies about basic qualifications.",
+            "This credential fraud destroys your entire candidacy.",
+            "No one can trust someone who lies about their own experience."
+          ]
+        },
+        'timeline-contradiction': {
+          'gentle': [
+            "The timeline doesn't quite add up there.",
+            "Those dates seem inconsistent with what you said earlier.",
+            "Can you help me understand this timing discrepancy?"
+          ],
+          'firm': [
+            "Your timeline contradicts your earlier statements.",
+            "These dates don't match up - which version is correct?",
+            "You're giving conflicting accounts of when this happened."
+          ],
+          'aggressive': [
+            "You're changing your story about when this happened!",
+            "Your timeline keeps shifting - what are you hiding?",
+            "Stop lying about the sequence of events!"
+          ],
+          'devastating': [
+            "This timeline deception exposes a pattern of lies.",
+            "You can't keep your own story straight.",
+            "This chronological dishonesty destroys your credibility."
+          ]
+        }
+      },
+      followUpTemplates: {
+        'direct-contradiction': [
+          "Which statement should voters believe?",
+          "How do you explain this complete reversal?",
+          "Can voters trust someone who contradicts themselves?"
+        ],
+        'expertise-fail': [
+          "Should voters question your competence?",
+          "How can you lead on issues you don't understand?",
+          "What other blind spots do you have?"
+        ],
+        'policy-flip': [
+          "What will you flip-flop on next?",
+          "How do voters know where you really stand?",
+          "Is this political opportunism or genuine evolution?"
+        ],
+        'moral-inconsistency': [
+          "Do you have any consistent principles?",
+          "How can voters trust your moral judgment?",
+          "What does this say about your character?"
+        ],
+        'fact-error': [
+          "How can voters trust your other claims?",
+          "Do you fact-check anything before speaking?",
+          "What else are you wrong about?"
+        ],
+        'evasion-pattern': [
+          "What are you afraid to tell voters?",
+          "When will you start giving straight answers?",
+          "Is honesty too much to ask from a politician?"
+        ],
+        'false-credential': [
+          "What else have you lied about?",
+          "How can voters trust your qualifications?",
+          "Is your entire resume fabricated?"
+        ],
+        'timeline-contradiction': [
+          "What's the real story?",
+          "Can you keep any story straight?",
+          "Why should anyone believe your version of events?"
+        ]
+      },
+      visualEffects: {
+        'direct-contradiction': {
+          animation: 'gotcha-contradiction',
+          color: '#dc2626', // red-600
+          intensity: 85,
+          duration: 4000
+        },
+        'expertise-fail': {
+          animation: 'gotcha-exposure',
+          color: '#ea580c', // orange-600
+          intensity: 80,
+          duration: 3500
+        },
+        'policy-flip': {
+          animation: 'gotcha-flip',
+          color: '#d97706', // amber-600
+          intensity: 75,
+          duration: 3500
+        },
+        'moral-inconsistency': {
+          animation: 'gotcha-moral',
+          color: '#7c2d12', // red-800
+          intensity: 90,
+          duration: 4500
+        },
+        'fact-error': {
+          animation: 'gotcha-fact',
+          color: '#dc2626', // red-600
+          intensity: 70,
+          duration: 3000
+        },
+        'evasion-pattern': {
+          animation: 'gotcha-evasion',
+          color: '#059669', // emerald-600
+          intensity: 65,
+          duration: 3000
+        },
+        'false-credential': {
+          animation: 'gotcha-fraud',
+          color: '#7c2d12', // red-800
+          intensity: 95,
+          duration: 5000
+        },
+        'timeline-contradiction': {
+          animation: 'gotcha-timeline',
+          color: '#0891b2', // cyan-600
+          intensity: 70,
+          duration: 3200
+        }
+      }
+    };
+  }
+
+  /**
+   * Detect gotcha moments based on player response and conversation history
+   */
+  private detectGotchaMoment(response: PlayerResponse, state: ConversationState): GotchaMoment | null {
+    if (!this.gotchaDetection.enabled) return null;
+
+    // Check cooldown period
+    const now = Date.now();
+    if (now - this.lastGotchaTime < this.gotchaDetection.cooldownPeriod * 1000) {
+      return null;
+    }
+
+    // Check for different types of gotcha moments
+    const contradictionGotcha = this.detectContradictionGotcha(response, state);
+    if (contradictionGotcha) return contradictionGotcha;
+
+    const expertiseGotcha = this.detectExpertiseFailGotcha(response, state);
+    if (expertiseGotcha) return expertiseGotcha;
+
+    const moralGotcha = this.detectMoralInconsistencyGotcha(response, state);
+    if (moralGotcha) return moralGotcha;
+
+    const evasionGotcha = this.detectEvasionPatternGotcha(response, state);
+    if (evasionGotcha) return evasionGotcha;
+
+    return null;
+  }
+
+  /**
+   * Detect direct contradiction gotcha moments
+   */
+  private detectContradictionGotcha(response: PlayerResponse, state: ConversationState): GotchaMoment | null {
+    if (!response.contradictsPrevious) return null;
+
+    // Find the contradicting response
+    const contradictingResponse = state.playerResponses.find(r =>
+      r.topic === response.topic && r.questionId !== response.questionId
+    );
+
+    if (!contradictingResponse) return null;
+
+    return {
+      id: `contradiction-${Date.now()}`,
+      type: 'direct-contradiction',
+      severity: 'major',
+      description: `Player contradicted their earlier position on ${response.topic}`,
+      evidence: [
+        {
+          type: 'statement',
+          content: contradictingResponse.responseText,
+          source: contradictingResponse.questionId,
+          timestamp: contradictingResponse.timestamp,
+          confidence: 0.9
+        },
+        {
+          type: 'statement',
+          content: response.responseText,
+          source: response.questionId,
+          timestamp: response.timestamp,
+          confidence: 0.9
+        }
+      ],
+      triggerResponse: response,
+      dramaticImpact: 85,
+      timestamp: Date.now()
+    };
+  }
+
+  /**
+   * Detect expertise failure gotcha moments
+   */
+  private detectExpertiseFailGotcha(response: PlayerResponse, state: ConversationState): GotchaMoment | null {
+    // Check if response shows lack of knowledge in their supposed area of expertise
+    if (response.wordCount < 10 || response.tone === 'evasive') {
+      // This is a simplistic check - in a real implementation, we'd analyze
+      // response content against their background expertise
+      const currentQuestion = this.getCurrentQuestion(response.questionId);
+
+      if (currentQuestion && this.isExpertiseQuestion(currentQuestion, state)) {
+        return {
+          id: `expertise-fail-${Date.now()}`,
+          type: 'expertise-fail',
+          severity: 'major',
+          description: 'Player failed to demonstrate expertise in their claimed field',
+          evidence: [
+            {
+              type: 'statement',
+              content: response.responseText,
+              source: response.questionId,
+              confidence: 0.7
+            }
+          ],
+          triggerResponse: response,
+          dramaticImpact: 80,
+          timestamp: Date.now()
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Check if question is related to player's area of expertise
+   */
+  private isExpertiseQuestion(question: DynamicQuestion, state: ConversationState): boolean {
+    // This would check against the player's background
+    // For now, we'll use a simple heuristic
+    return question.type === 'challenge' &&
+           this.personality.getFrustrationLevel() < 30; // Early in interview
+  }
+
+  /**
+   * Detect moral inconsistency gotcha moments
+   */
+  private detectMoralInconsistencyGotcha(response: PlayerResponse, state: ConversationState): GotchaMoment | null {
+    // Look for moral/ethical contradictions in player's responses
+    const moralResponses = state.playerResponses.filter(r =>
+      r.topic && ['ethics', 'integrity', 'values', 'principles'].includes(r.topic.toLowerCase())
+    );
+
+    if (moralResponses.length > 1 && response.topic &&
+        ['ethics', 'integrity', 'values', 'principles'].includes(response.topic.toLowerCase())) {
+
+      // Check for contradictory moral stances
+      const hasContradiction = moralResponses.some(r =>
+        r.tone !== response.tone && Math.abs(r.timestamp - response.timestamp) < 300000 // 5 minutes
+      );
+
+      if (hasContradiction) {
+        return {
+          id: `moral-inconsistency-${Date.now()}`,
+          type: 'moral-inconsistency',
+          severity: 'critical',
+          description: 'Player showed moral inconsistency in ethical responses',
+          evidence: [
+            {
+              type: 'statement',
+              content: response.responseText,
+              source: response.questionId,
+              confidence: 0.8
+            }
+          ],
+          triggerResponse: response,
+          dramaticImpact: 90,
+          timestamp: Date.now()
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Detect evasion pattern gotcha moments
+   */
+  private detectEvasionPatternGotcha(response: PlayerResponse, state: ConversationState): GotchaMoment | null {
+    if (!response.topic) return null;
+
+    const topicEvasions = this.topicEvasionMap.get(response.topic) || 0;
+
+    if (topicEvasions >= 3 && response.tone === 'evasive') {
+      return {
+        id: `evasion-pattern-${Date.now()}`,
+        type: 'evasion-pattern',
+        severity: 'major',
+        description: `Player has systematically avoided questions about ${response.topic}`,
+        evidence: [
+          {
+            type: 'statement',
+            content: `Avoided ${response.topic} questions ${topicEvasions} times`,
+            source: 'pattern-analysis',
+            confidence: 0.9
+          }
+        ],
+        triggerResponse: response,
+        dramaticImpact: 75,
+        timestamp: Date.now()
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Handle gotcha moment with appropriate response
+   */
+  private handleGotchaMoment(gotcha: GotchaMoment, response: PlayerResponse, state: ConversationState): ConversationAction {
+    this.gotchaHistory.push(gotcha);
+    this.lastGotchaTime = Date.now();
+
+    // Determine confrontation level based on interviewer state and gotcha severity
+    const confrontationLevel = this.determineConfrontationLevel(gotcha, state);
+
+    // Generate gotcha response
+    const messages = this.gotchaResponseConfig.confrontationMessages[gotcha.type];
+    const levelMessages = messages[confrontationLevel] || messages['firm'];
+    const gotchaMessage = levelMessages[Math.floor(Math.random() * levelMessages.length)];
+
+    // Generate follow-up question
+    const followUpTemplates = this.gotchaResponseConfig.followUpTemplates[gotcha.type];
+    const followUpQuestion = followUpTemplates[Math.floor(Math.random() * followUpTemplates.length)];
+
+    return {
+      type: 'follow-up',
+      content: `${gotchaMessage} ${followUpQuestion}`,
+      metadata: {
+        gotchaMoment: true,
+        gotchaType: gotcha.type,
+        gotchaSeverity: gotcha.severity,
+        gotchaId: gotcha.id,
+        confrontationLevel,
+        dramaticImpact: gotcha.dramaticImpact,
+        visualEffect: this.gotchaResponseConfig.visualEffects[gotcha.type],
+        evidence: gotcha.evidence
+      }
+    };
+  }
+
+  /**
+   * Determine appropriate confrontation level for gotcha moment
+   */
+  private determineConfrontationLevel(gotcha: GotchaMoment, state: ConversationState): 'gentle' | 'firm' | 'aggressive' | 'devastating' {
+    const frustrationLevel = this.personality.getFrustrationLevel();
+    const previousGotchas = this.gotchaHistory.length;
+
+    // Factor in severity, interviewer frustration, and gotcha history
+    let confrontationScore = 0;
+
+    // Base score from severity
+    switch (gotcha.severity) {
+      case 'minor': confrontationScore += 20; break;
+      case 'major': confrontationScore += 50; break;
+      case 'critical': confrontationScore += 80; break;
+    }
+
+    // Add interviewer frustration
+    confrontationScore += frustrationLevel * 0.8;
+
+    // Add escalation for repeated gotcha moments
+    confrontationScore += previousGotchas * 15;
+
+    // Add dramatic impact factor
+    confrontationScore += gotcha.dramaticImpact * 0.3;
+
+    // Determine level
+    if (confrontationScore >= 90) return 'devastating';
+    if (confrontationScore >= 70) return 'aggressive';
+    if (confrontationScore >= 40) return 'firm';
+    return 'gentle';
+  }
+
+  /**
+   * Get gotcha moment history
+   */
+  getGotchaHistory(): GotchaMoment[] {
+    return [...this.gotchaHistory];
+  }
+
+  /**
+   * Get gotcha detection status
+   */
+  getGotchaStatus(): {
+    enabled: boolean;
+    totalGotchas: number;
+    recentGotchas: GotchaMoment[];
+    cooldownRemaining: number;
+  } {
+    const now = Date.now();
+    const cooldownRemaining = Math.max(0,
+      (this.lastGotchaTime + this.gotchaDetection.cooldownPeriod * 1000 - now) / 1000
+    );
+
+    const recentGotchas = this.gotchaHistory.filter(g =>
+      now - g.timestamp < this.gotchaDetection.trackingPeriod * 60 * 1000
+    );
+
+    return {
+      enabled: this.gotchaDetection.enabled,
+      totalGotchas: this.gotchaHistory.length,
+      recentGotchas,
+      cooldownRemaining
+    };
+  }
+
+  /**
    * Clear conversation state (for testing/reset)
    */
   reset(): void {
@@ -1177,5 +1772,7 @@ export class ConversationFlow {
     this.topicEvasionMap.clear();
     this.rapidFireSession = null;
     this.lastRapidFireTime = 0;
+    this.gotchaHistory = [];
+    this.lastGotchaTime = 0;
   }
 }

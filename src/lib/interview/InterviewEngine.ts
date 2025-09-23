@@ -192,13 +192,19 @@ export class InterviewEngine {
   }
 
   /**
-   * Get interviewer's current mood and recent changes
+   * Get interviewer's current mood and recent changes including frustration state
    */
-  getInterviewerStatus(): { mood: string; recentReaction?: string; frustrationLevel: number } {
+  getInterviewerStatus(): {
+    mood: string;
+    recentReaction?: string;
+    frustrationLevel: number;
+    frustrationState?: any;
+  } {
     return {
       mood: this.state.interviewerMood,
-      recentReaction: this.personality.getLastReaction(),
-      frustrationLevel: this.personality.getFrustrationLevel()
+      recentReaction: this.personality.getLastReaction()?.message || '',
+      frustrationLevel: this.personality.getFrustrationLevel(),
+      frustrationState: this.personality.getFrustrationState()
     };
   }
 

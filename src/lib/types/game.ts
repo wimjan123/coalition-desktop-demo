@@ -24,6 +24,28 @@ export interface Party {
 	isPlayerParty: boolean;
 }
 
+export interface StartingScenario {
+	id: string;
+	name: string;
+	description: string;
+	interviewerTone: 'hostile' | 'skeptical' | 'neutral' | 'sympathetic';
+	gameplayModifiers: {
+		approvalRating: number;
+		mediaRelations: number;
+		coalitionTrust: number;
+		specialActions: string[];
+	};
+	riskLevel: 'low' | 'medium' | 'high' | 'extreme';
+}
+
+export interface InterviewResponse {
+	text: string;
+	position: number;
+	priority: number;
+	tone: 'aggressive' | 'defensive' | 'evasive' | 'confrontational' | 'diplomatic';
+	consistency: boolean; // Does this contradict previous answers?
+}
+
 export interface PlayerCharacter {
 	id: string;
 	name: string;
@@ -70,6 +92,13 @@ export interface GameState {
 		headline: string;
 		description: string;
 		trigger: string;
+	};
+	// Character creation state
+	selectedScenario?: StartingScenario;
+	interviewState?: {
+		responseTones: string[]; // Track player response patterns
+		contradictions: number; // Count of contradictory answers
+		personalityProfile: { [tone: string]: number }; // Scoring for different response styles
 	};
 	// Campaign data
 	population?: { [groupId: string]: import('./population.js').PopulationSegment };
@@ -161,15 +190,177 @@ export const DUTCH_ISSUES: Issue[] = [
 	}
 ];
 
-export const CHARACTER_BACKGROUNDS = [
-	{ id: 'business', name: 'Business Leader', description: 'Former CEO or entrepreneur', traits: ['pragmatic', 'ambitious'], bonuses: { negotiation: 2 } },
-	{ id: 'academic', name: 'University Professor', description: 'Academic researcher and teacher', traits: ['intellectual', 'analytical'], bonuses: { integrity: 2 } },
-	{ id: 'lawyer', name: 'Lawyer', description: 'Legal professional', traits: ['argumentative', 'detail-oriented'], bonuses: { negotiation: 1, integrity: 1 } },
-	{ id: 'journalist', name: 'Journalist', description: 'Media professional', traits: ['inquisitive', 'communicative'], bonuses: { charisma: 2 } },
-	{ id: 'activist', name: 'Activist', description: 'Social or environmental campaigner', traits: ['passionate', 'principled'], bonuses: { charisma: 1, integrity: 1 } },
-	{ id: 'civil-servant', name: 'Civil Servant', description: 'Government bureaucrat', traits: ['methodical', 'diplomatic'], bonuses: { experience: 10 } },
-	{ id: 'teacher', name: 'Teacher', description: 'Primary or secondary school educator', traits: ['patient', 'empathetic'], bonuses: { charisma: 1, integrity: 1 } },
-	{ id: 'military', name: 'Military Officer', description: 'Former armed forces', traits: ['disciplined', 'authoritative'], bonuses: { experience: 5, negotiation: 1 } }
+export interface CharacterBackground {
+	id: string;
+	name: string;
+	description: string;
+	traits: string[];
+	bonuses: { [key: string]: number };
+	riskLevel?: 'low' | 'medium' | 'high' | 'extreme';
+	startingPenalties?: { [key: string]: number };
+	uniqueOpportunities?: string[];
+	interviewChallenges?: string[];
+}
+
+export const CHARACTER_BACKGROUNDS: CharacterBackground[] = [
+	// Conventional backgrounds
+	{ id: 'business', name: 'Business Leader', description: 'Former CEO or entrepreneur', traits: ['pragmatic', 'ambitious'], bonuses: { negotiation: 2 }, riskLevel: 'low' },
+	{ id: 'academic', name: 'University Professor', description: 'Academic researcher and teacher', traits: ['intellectual', 'analytical'], bonuses: { integrity: 2 }, riskLevel: 'low' },
+	{ id: 'lawyer', name: 'Lawyer', description: 'Legal professional', traits: ['argumentative', 'detail-oriented'], bonuses: { negotiation: 1, integrity: 1 }, riskLevel: 'low' },
+	{ id: 'journalist', name: 'Journalist', description: 'Media professional', traits: ['inquisitive', 'communicative'], bonuses: { charisma: 2 }, riskLevel: 'low' },
+	{ id: 'activist', name: 'Activist', description: 'Social or environmental campaigner', traits: ['passionate', 'principled'], bonuses: { charisma: 1, integrity: 1 }, riskLevel: 'low' },
+	{ id: 'civil-servant', name: 'Civil Servant', description: 'Government bureaucrat', traits: ['methodical', 'diplomatic'], bonuses: { experience: 10 }, riskLevel: 'low' },
+	{ id: 'teacher', name: 'Teacher', description: 'Primary or secondary school educator', traits: ['patient', 'empathetic'], bonuses: { charisma: 1, integrity: 1 }, riskLevel: 'low' },
+	{ id: 'military', name: 'Military Officer', description: 'Former armed forces', traits: ['disciplined', 'authoritative'], bonuses: { experience: 5, negotiation: 1 }, riskLevel: 'low' },
+
+	// Controversial Dutch backgrounds
+	{
+		id: 'toeslagenaffaire-whistleblower',
+		name: 'Toeslagenaffaire Whistleblower',
+		description: 'Government insider who exposed institutional racism in childcare benefits scandal',
+		traits: ['principled', 'honest', 'analytical'],
+		bonuses: { integrity: 3 },
+		riskLevel: 'high',
+		startingPenalties: { establishmentTrust: -20 },
+		uniqueOpportunities: ['Institutional Reform', 'Transparency Crusade'],
+		interviewChallenges: ['racism-exposure', 'system-destruction']
+	},
+	{
+		id: 'shell-executive',
+		name: 'Shell/Unilever Executive',
+		description: 'Former multinational executive during dividend tax controversy',
+		traits: ['pragmatic', 'ambitious', 'calculating'],
+		bonuses: { negotiation: 2, experience: 5 },
+		riskLevel: 'medium',
+		startingPenalties: { environmentalCredibility: -15 },
+		uniqueOpportunities: ['Economic Transition', 'Business Relations'],
+		interviewChallenges: ['climate-profits', 'tax-avoidance']
+	},
+	{
+		id: 'bbb-defector',
+		name: 'BBB Defector',
+		description: 'Former farmers\' movement leader switching to broader politics',
+		traits: ['passionate', 'populist', 'bold'],
+		bonuses: { charisma: 2 },
+		riskLevel: 'medium',
+		startingPenalties: { urbanAppeal: -30 },
+		uniqueOpportunities: ['Agricultural Reform', 'Anti-Brussels'],
+		interviewChallenges: ['farmer-betrayal', 'rural-representation']
+	},
+	{
+		id: 'rutte-survivor',
+		name: 'Rutte Administration Survivor',
+		description: 'Former government minister during toeslagenaffaire cover-up',
+		traits: ['diplomatic', 'calculating', 'experienced'],
+		bonuses: { negotiation: 2, experience: 8 },
+		riskLevel: 'high',
+		startingPenalties: { antiEstablishmentCredibility: -25 },
+		uniqueOpportunities: ['Polder Model', 'Coalition Building'],
+		interviewChallenges: ['government-lies', 'accountability']
+	},
+	{
+		id: 'nitrogen-researcher',
+		name: 'Nitrogen Crisis Researcher',
+		description: 'Environmental scientist who exposed livestock emissions data',
+		traits: ['analytical', 'principled', 'intellectual'],
+		bonuses: { integrity: 2, experience: 3 },
+		riskLevel: 'medium',
+		startingPenalties: { farmerSupport: -20 },
+		uniqueOpportunities: ['Evidence-Based Policy', 'Climate Emergency'],
+		interviewChallenges: ['farmer-jobs', 'economic-impact']
+	},
+	{
+		id: 'media-pariah',
+		name: 'Media Pariah',
+		description: 'Journalist fired for controversial positions on COVID/immigration',
+		traits: ['bold', 'principled', 'populist'],
+		bonuses: { charisma: 1, integrity: 1 },
+		riskLevel: 'extreme',
+		startingPenalties: { mainstreamMediaRelations: -30 },
+		uniqueOpportunities: ['Alternative Media', 'Truth Campaign'],
+		interviewChallenges: ['controversial-views', 'media-credibility']
+	}
+];
+
+export const STARTING_SCENARIOS: StartingScenario[] = [
+	{
+		id: 'new-party',
+		name: 'New Party Founder',
+		description: 'Start fresh with a new political party, free from baggage but with limited resources',
+		interviewerTone: 'neutral',
+		gameplayModifiers: {
+			approvalRating: 0,
+			mediaRelations: 0,
+			coalitionTrust: 0,
+			specialActions: []
+		},
+		riskLevel: 'low'
+	},
+	{
+		id: 'party-rehabilitator',
+		name: 'Party Rehabilitator',
+		description: 'Take over leadership of a party with a toxic past requiring complete rebranding',
+		interviewerTone: 'hostile',
+		gameplayModifiers: {
+			approvalRating: -20,
+			mediaRelations: -15,
+			coalitionTrust: -25,
+			specialActions: ['Reform Campaign', 'Historical Apology']
+		},
+		riskLevel: 'extreme'
+	},
+	{
+		id: 'scandal-survivor',
+		name: 'Scandal Survivor',
+		description: 'Return to politics after surviving a major personal or political scandal',
+		interviewerTone: 'skeptical',
+		gameplayModifiers: {
+			approvalRating: -15,
+			mediaRelations: -20,
+			coalitionTrust: -10,
+			specialActions: ['Redemption Campaign', 'Scandal Immunity']
+		},
+		riskLevel: 'high'
+	},
+	{
+		id: 'emergency-replacement',
+		name: 'Emergency Replacement',
+		description: 'Step in as emergency leader after previous leader resigned in scandal',
+		interviewerTone: 'sympathetic',
+		gameplayModifiers: {
+			approvalRating: -5,
+			mediaRelations: 5,
+			coalitionTrust: -15,
+			specialActions: ['Crisis Management', 'Stability Message']
+		},
+		riskLevel: 'medium'
+	},
+	{
+		id: 'coalition-defector',
+		name: 'Coalition Defector',
+		description: 'Leave an existing coalition to start your own political movement',
+		interviewerTone: 'confrontational',
+		gameplayModifiers: {
+			approvalRating: -10,
+			mediaRelations: -5,
+			coalitionTrust: -30,
+			specialActions: ['Principled Stand', 'Coalition Experience']
+		},
+		riskLevel: 'medium'
+	},
+	{
+		id: 'hostile-takeover',
+		name: 'Hostile Takeover',
+		description: 'Challenge existing party leadership through internal party warfare',
+		interviewerTone: 'hostile',
+		gameplayModifiers: {
+			approvalRating: -25,
+			mediaRelations: -10,
+			coalitionTrust: -20,
+			specialActions: ['Party Infrastructure', 'Internal Opposition']
+		},
+		riskLevel: 'high'
+	}
 ];
 
 export const PERSONALITY_TRAITS = [

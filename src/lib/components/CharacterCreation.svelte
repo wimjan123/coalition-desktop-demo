@@ -1,21 +1,27 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import type { PlayerCharacter, Party, PoliticalPosition } from '../types/game.js';
+	import type { PlayerCharacter, Party, PoliticalPosition, StartingScenario } from '../types/game.js';
 	import { CHARACTER_BACKGROUNDS, DUTCH_ISSUES, PERSONALITY_TRAITS } from '../types/game.js';
 	import MediaInterview from './MediaInterview.svelte';
+	import ScenarioSelection from './ScenarioSelection.svelte';
 
 	const dispatch = createEventDispatcher<{
-		complete: { player: PlayerCharacter; party: Party };
+		complete: { player: PlayerCharacter; party: Party; scenario: StartingScenario };
 	}>();
 
 	// Character creation state
-	let currentStep = 1;
-	const totalSteps = 4;
+	let currentStep = 0; // Start with scenario selection
+	const totalSteps = 5; // Steps 0-4, 5 steps total
+
+	// Scenario data
+	let selectedScenario: StartingScenario | null = null;
 
 	// Character data
 	let characterName = '';
 	let characterAge = 45;
 	let selectedBackground = CHARACTER_BACKGROUNDS[0];
+	let showConfirmationDialog = false;
+	let pendingBackground: typeof CHARACTER_BACKGROUNDS[0] | null = null;
 	let selectedTraits: string[] = [];
 
 	// Party data
@@ -60,6 +66,7 @@
 	// Reactive validation - triggers whenever form values change
 	$: canProceedToNextStep = (() => {
 		switch (currentStep) {
+			case 0: return selectedScenario !== null;
 			case 1: return characterName.trim().length > 0 && characterAge >= 25;
 			case 2: return selectedTraits.length >= 2;
 			case 3: return partyName.trim().length > 0 && partyShortName.trim().length > 0;
@@ -69,7 +76,40 @@
 	})();
 
 	function selectBackground(background: typeof CHARACTER_BACKGROUNDS[0]) {
-		selectedBackground = background;
+		if (background.riskLevel === 'high' || background.riskLevel === 'extreme') {
+			pendingBackground = background;
+			showConfirmationDialog = true;
+		} else {
+			selectedBackground = background;
+		}
+	}
+
+	function confirmBackgroundSelection() {
+		if (pendingBackground) {
+			selectedBackground = pendingBackground;
+			pendingBackground = null;
+		}
+		showConfirmationDialog = false;
+	}
+
+	function cancelBackgroundSelection() {
+		pendingBackground = null;
+		showConfirmationDialog = false;
+	}
+
+	function getRiskColor(riskLevel: string): string {
+		switch (riskLevel) {
+			case 'low': return 'text-green-600 bg-green-50 border-green-200';
+			case 'medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+			case 'high': return 'text-orange-600 bg-orange-50 border-orange-200';
+			case 'extreme': return 'text-red-600 bg-red-50 border-red-200';
+			default: return 'text-gray-600 bg-gray-50 border-gray-200';
+		}
+	}
+
+	function getModifierDisplay(value: number): string {
+		if (value === 0) return '±0';
+		return value > 0 ? `+${value}` : `${value}`;
 	}
 
 	function toggleTrait(trait: string) {
@@ -104,9 +144,14 @@
 	}
 
 	function prevStep() {
-		if (currentStep > 1) {
+		if (currentStep > 0) {
 			currentStep--;
 		}
+	}
+
+	function handleScenarioSelect(event: CustomEvent<{ scenario: StartingScenario }>) {
+		selectedScenario = event.detail.scenario;
+		nextStep();
 	}
 
 
@@ -133,7 +178,7 @@
 			isPlayerParty: true
 		};
 
-		dispatch('complete', { player, party });
+		dispatch('complete', { player, party, scenario: selectedScenario! });
 	}
 
 	function getPositionLabel(position: number): string {
@@ -163,19 +208,25 @@
 		</div>
 		<div class="window-title">COALITION - Character Creation</div>
 		<div class="step-indicator">
-			Step {currentStep} of {totalSteps}
+			Step {currentStep + 1} of {totalSteps}
 		</div>
 	</div>
 
 	<!-- Progress bar integrated into window -->
 	<div class="progress-section">
 		<div class="progress-bar">
-			<div class="progress-fill" style="width: {(currentStep / totalSteps) * 100}%"></div>
+			<div class="progress-fill" style="width: {((currentStep + 1) / totalSteps) * 100}%"></div>
 		</div>
 	</div>
 
 	<div class="content">
-		{#if currentStep === 1}
+		{#if currentStep === 0}
+			<!-- Step 0: Scenario Selection -->
+			<div class="step">
+				<ScenarioSelection on:select={handleScenarioSelect} />
+			</div>
+
+		{:else if currentStep === 1}
 			<!-- Step 1: Basic Character Info -->
 			<div class="step">
 				<h2>Personal Details</h2>
@@ -211,13 +262,74 @@
 								class:selected={selectedBackground.id === background.id}
 								on:click={() => selectBackground(background)}
 							>
+								<!-- Risk Level Badge -->
+								<div class="background-header">
+									<span class="risk-badge border {getRiskColor(background.riskLevel)}">
+										{background.riskLevel.toUpperCase()} RISK
+									</span>
+									{#if selectedBackground.id === background.id}
+										<div class="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+											<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+												<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+											</svg>
+										</div>
+									{/if}
+								</div>
+
 								<h3>{background.name}</h3>
 								<p>{background.description}</p>
+
+								<!-- Traits -->
 								<div class="traits">
 									{#each background.traits as trait}
 										<span class="trait-tag">{trait}</span>
 									{/each}
 								</div>
+
+								<!-- Stat Bonuses -->
+								{#if background.bonuses}
+									<div class="bonuses">
+										<div class="bonus-title">Starting Bonuses:</div>
+										<div class="bonus-grid">
+											{#if background.bonuses.charisma}
+												<span class="bonus-item">Charisma {getModifierDisplay(background.bonuses.charisma)}</span>
+											{/if}
+											{#if background.bonuses.integrity}
+												<span class="bonus-item">Integrity {getModifierDisplay(background.bonuses.integrity)}</span>
+											{/if}
+											{#if background.bonuses.negotiation}
+												<span class="bonus-item">Negotiation {getModifierDisplay(background.bonuses.negotiation)}</span>
+											{/if}
+											{#if background.bonuses.experience}
+												<span class="bonus-item">Experience {getModifierDisplay(background.bonuses.experience)} yrs</span>
+											{/if}
+										</div>
+									</div>
+								{/if}
+
+								<!-- Starting Penalties (for controversial backgrounds) -->
+								{#if background.startingPenalties}
+									<div class="penalties">
+										<div class="penalty-title">Starting Challenges:</div>
+										<div class="penalty-grid">
+											{#each Object.entries(background.startingPenalties) as [key, value]}
+												<span class="penalty-item">{key.replace(/([A-Z])/g, ' $1').trim()}: {getModifierDisplay(value)}</span>
+											{/each}
+										</div>
+									</div>
+								{/if}
+
+								<!-- Unique Opportunities -->
+								{#if background.uniqueOpportunities && background.uniqueOpportunities.length > 0}
+									<div class="opportunities">
+										<div class="opportunity-title">Special Actions:</div>
+										<div class="opportunity-grid">
+											{#each background.uniqueOpportunities as opportunity}
+												<span class="opportunity-tag">{opportunity}</span>
+											{/each}
+										</div>
+									</div>
+								{/if}
 							</button>
 						{/each}
 					</div>
@@ -356,7 +468,7 @@
 	{#if currentStep !== 4}
 	<div class="navigation-footer">
 		<div class="nav-left">
-			{#if currentStep > 1}
+			{#if currentStep > 0}
 				<button class="nav-btn secondary" on:click={prevStep}>
 					← Previous
 				</button>
@@ -366,7 +478,7 @@
 		<div class="nav-center">
 			<div class="step-dots">
 				{#each Array(totalSteps) as _, i}
-					<div class="step-dot" class:active={i + 1 === currentStep} class:completed={i + 1 < currentStep}></div>
+					<div class="step-dot" class:active={i === currentStep} class:completed={i < currentStep}></div>
 				{/each}
 			</div>
 		</div>
@@ -383,6 +495,74 @@
 			{/if}
 		</div>
 	</div>
+	{/if}
+
+	<!-- High-Risk Background Confirmation Dialog -->
+	{#if showConfirmationDialog && pendingBackground}
+		<div class="confirmation-overlay">
+			<div class="confirmation-dialog">
+				<div class="dialog-header">
+					<h3>High-Risk Background Warning</h3>
+					<svg class="w-6 h-6 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+						<path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+					</svg>
+				</div>
+
+				<div class="dialog-content">
+					<h4>{pendingBackground.name}</h4>
+					<p>{pendingBackground.description}</p>
+
+					<div class="risk-warning">
+						<span class="risk-badge-large {getRiskColor(pendingBackground.riskLevel)}">
+							{pendingBackground.riskLevel.toUpperCase()} RISK BACKGROUND
+						</span>
+					</div>
+
+					<div class="warning-text">
+						<p>This background comes with significant challenges that will affect your campaign:</p>
+					</div>
+
+					<!-- Starting Penalties -->
+					{#if pendingBackground.startingPenalties}
+						<div class="dialog-penalties">
+							<h5>Starting Challenges:</h5>
+							<ul>
+								{#each Object.entries(pendingBackground.startingPenalties) as [key, value]}
+									<li class="penalty-detail">
+										<strong>{key.replace(/([A-Z])/g, ' $1').trim()}:</strong> {getModifierDisplay(value)}
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/if}
+
+					<!-- Unique Opportunities -->
+					{#if pendingBackground.uniqueOpportunities && pendingBackground.uniqueOpportunities.length > 0}
+						<div class="dialog-opportunities">
+							<h5>Special Campaign Actions:</h5>
+							<ul>
+								{#each pendingBackground.uniqueOpportunities as opportunity}
+									<li class="opportunity-detail">{opportunity}</li>
+								{/each}
+							</ul>
+						</div>
+					{/if}
+
+					<div class="confirmation-question">
+						<p><strong>Are you ready for this challenging but potentially rewarding path?</strong></p>
+					</div>
+				</div>
+
+				<div class="dialog-actions">
+					<button class="dialog-btn secondary" on:click={cancelBackgroundSelection}>
+						Choose Different Background
+					</button>
+					<button class="dialog-btn primary" on:click={confirmBackgroundSelection}>
+						Accept Challenge
+					</button>
+				</div>
+			</div>
+		</div>
 	{/if}
 </div>
 
@@ -813,5 +993,230 @@
 
 	.step-dot.completed {
 		background: #10b981;
+	}
+
+	/* Enhanced Background Cards */
+	.background-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 8px;
+	}
+
+	.risk-badge {
+		font-size: 0.7rem;
+		font-weight: 600;
+		padding: 2px 6px;
+		border-radius: 4px;
+		border-width: 1px;
+	}
+
+	.bonuses, .penalties, .opportunities {
+		margin-top: 8px;
+		font-size: 0.75rem;
+	}
+
+	.bonus-title, .penalty-title, .opportunity-title {
+		font-weight: 600;
+		margin-bottom: 4px;
+		color: #374151;
+	}
+
+	.bonus-grid, .penalty-grid {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 3px;
+	}
+
+	.bonus-item {
+		background: #dcfce7;
+		color: #166534;
+		padding: 1px 4px;
+		border-radius: 3px;
+		font-size: 0.65rem;
+		font-weight: 500;
+	}
+
+	.penalty-item {
+		background: #fef2f2;
+		color: #dc2626;
+		padding: 1px 4px;
+		border-radius: 3px;
+		font-size: 0.65rem;
+		font-weight: 500;
+	}
+
+	.opportunity-grid {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 3px;
+	}
+
+	.opportunity-tag {
+		background: #dbeafe;
+		color: #1d4ed8;
+		padding: 1px 4px;
+		border-radius: 3px;
+		font-size: 0.65rem;
+		font-weight: 500;
+	}
+
+	/* Confirmation Dialog */
+	.confirmation-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+	}
+
+	.confirmation-dialog {
+		background: white;
+		border-radius: 12px;
+		max-width: 500px;
+		width: 90%;
+		max-height: 80vh;
+		overflow-y: auto;
+		box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+	}
+
+	.dialog-header {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 20px 20px 0 20px;
+		border-bottom: 1px solid #e5e7eb;
+		margin-bottom: 16px;
+	}
+
+	.dialog-header h3 {
+		font-size: 1.25rem;
+		font-weight: 600;
+		color: #374151;
+		margin: 0;
+	}
+
+	.dialog-content {
+		padding: 0 20px;
+	}
+
+	.dialog-content h4 {
+		font-size: 1.1rem;
+		font-weight: 600;
+		color: #111827;
+		margin: 0 0 8px 0;
+	}
+
+	.dialog-content > p {
+		color: #6b7280;
+		margin-bottom: 16px;
+		line-height: 1.5;
+	}
+
+	.risk-warning {
+		text-align: center;
+		margin: 16px 0;
+	}
+
+	.risk-badge-large {
+		font-size: 0.875rem;
+		font-weight: 700;
+		padding: 8px 16px;
+		border-radius: 8px;
+		border-width: 2px;
+	}
+
+	.warning-text {
+		background: #fef3c7;
+		border: 1px solid #f59e0b;
+		border-radius: 6px;
+		padding: 12px;
+		margin: 16px 0;
+	}
+
+	.warning-text p {
+		margin: 0;
+		color: #92400e;
+		font-weight: 500;
+	}
+
+	.dialog-penalties, .dialog-opportunities {
+		margin: 16px 0;
+	}
+
+	.dialog-penalties h5, .dialog-opportunities h5 {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: #374151;
+		margin: 0 0 8px 0;
+	}
+
+	.dialog-penalties ul, .dialog-opportunities ul {
+		margin: 0;
+		padding-left: 20px;
+		list-style-type: disc;
+	}
+
+	.penalty-detail {
+		color: #dc2626;
+		margin-bottom: 4px;
+	}
+
+	.opportunity-detail {
+		color: #059669;
+		margin-bottom: 4px;
+	}
+
+	.confirmation-question {
+		background: #f3f4f6;
+		border-radius: 6px;
+		padding: 12px;
+		margin: 16px 0;
+		text-align: center;
+	}
+
+	.confirmation-question p {
+		margin: 0;
+		color: #374151;
+	}
+
+	.dialog-actions {
+		display: flex;
+		gap: 12px;
+		padding: 20px;
+		border-top: 1px solid #e5e7eb;
+	}
+
+	.dialog-btn {
+		flex: 1;
+		padding: 10px 16px;
+		border: none;
+		border-radius: 6px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.dialog-btn.primary {
+		background: #dc2626;
+		color: white;
+	}
+
+	.dialog-btn.primary:hover {
+		background: #b91c1c;
+	}
+
+	.dialog-btn.secondary {
+		background: #e5e7eb;
+		color: #374151;
+	}
+
+	.dialog-btn.secondary:hover {
+		background: #d1d5db;
 	}
 </style>

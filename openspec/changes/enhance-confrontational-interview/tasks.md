@@ -1,11 +1,11 @@
 # Implementation Tasks
 
 ## 1. Data Structure Foundation
-- [ ] 1.1 Create `StartingScenario` interface in `src/lib/types/game.ts`
-- [ ] 1.2 Extend `CharacterBackground` interface with risk/reward properties
-- [ ] 1.3 Add controversial backgrounds to `CHARACTER_BACKGROUNDS` array
-- [ ] 1.4 Create `InterviewResponse` interface with tone tracking
-- [ ] 1.5 Add interview state tracking to game store
+- [x] 1.1 Create `StartingScenario` interface in `src/lib/types/game.ts`
+- [x] 1.2 Extend `CharacterBackground` interface with risk/reward properties
+- [x] 1.3 Add controversial backgrounds to `CHARACTER_BACKGROUNDS` array
+- [x] 1.4 Create `InterviewResponse` interface with tone tracking
+- [x] 1.5 Add interview state tracking to game store
 
 ## 2. Scenario Selection Component
 - [ ] 2.1 Create `ScenarioSelection.svelte` component

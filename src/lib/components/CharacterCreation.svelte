@@ -1,12 +1,18 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import type { PlayerCharacter, Party, PoliticalPosition, StartingScenario } from '../types/game.js';
+	import type { PlayerCharacter, Party, PoliticalPosition, StartingScenario, InterviewPerformanceSummary } from '../types/game.js';
 	import { CHARACTER_BACKGROUNDS, DUTCH_ISSUES, PERSONALITY_TRAITS } from '../types/game.js';
 	import MediaInterview from './MediaInterview.svelte';
 	import ScenarioSelection from './ScenarioSelection.svelte';
 
 	const dispatch = createEventDispatcher<{
-		complete: { player: PlayerCharacter; party: Party; scenario: StartingScenario };
+		complete: {
+			player: PlayerCharacter;
+			party: Party;
+			scenario: StartingScenario;
+			background: typeof CHARACTER_BACKGROUNDS[number];
+			interview: InterviewPerformanceSummary;
+		};
 	}>();
 
 	// Character creation state
@@ -36,6 +42,7 @@
 		position: 0, // Neutral starting position
 		priority: 3  // Medium priority
 	}));
+	let interviewSummary: InterviewPerformanceSummary | null = null;
 
 	// Computed stats based on background and traits
 	$: stats = {
@@ -97,7 +104,7 @@
 		showConfirmationDialog = false;
 	}
 
-	function getRiskColor(riskLevel: string): string {
+	function getRiskColor(riskLevel?: string): string {
 		switch (riskLevel) {
 			case 'low': return 'text-green-600 bg-green-50 border-green-200';
 			case 'medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
@@ -105,6 +112,10 @@
 			case 'extreme': return 'text-red-600 bg-red-50 border-red-200';
 			default: return 'text-gray-600 bg-gray-50 border-gray-200';
 		}
+	}
+
+	function getRiskLabel(riskLevel?: string): string {
+		return (riskLevel ?? 'low').toUpperCase();
 	}
 
 	function getModifierDisplay(value: number): string {
@@ -132,7 +143,8 @@
 		);
 	}
 
-	function handleInterviewComplete(event: CustomEvent<{ positions: PoliticalPosition[] }>) {
+	function handleInterviewComplete(event: CustomEvent<InterviewPerformanceSummary>) {
+		interviewSummary = event.detail;
 		positions = event.detail.positions;
 		completeCreation();
 	}
@@ -156,6 +168,24 @@
 
 
 	function completeCreation() {
+		const defaultMood = selectedScenario ? [selectedScenario.interviewerTone] : ['neutral'];
+		const interview: InterviewPerformanceSummary = interviewSummary ?? {
+			positions,
+			scores: {
+				consistency: 60,
+				confidence: 60,
+				authenticity: 60
+			},
+			rating: {
+				score: 60,
+				grade: 'C',
+				description: 'Baseline interview performance.'
+			},
+			tonePattern: [],
+			interviewerMoodProgression: defaultMood,
+			contradictions: []
+		};
+
 		const player: PlayerCharacter = {
 			id: 'player',
 			name: characterName.trim(),
@@ -178,7 +208,7 @@
 			isPlayerParty: true
 		};
 
-		dispatch('complete', { player, party, scenario: selectedScenario! });
+		dispatch('complete', { player, party, scenario: selectedScenario!, background: selectedBackground, interview });
 	}
 
 	function getPositionLabel(position: number): string {
@@ -265,7 +295,7 @@
 								<!-- Risk Level Badge -->
 								<div class="background-header">
 									<span class="risk-badge border {getRiskColor(background.riskLevel)}">
-										{background.riskLevel.toUpperCase()} RISK
+										{getRiskLabel(background.riskLevel)} RISK
 									</span>
 									{#if selectedBackground.id === background.id}
 										<div class="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
@@ -460,7 +490,7 @@
 				<p class="instruction">Your responses will establish your party's political platform</p>
 
 				<MediaInterview
-					selectedScenario={selectedScenario}
+					selectedScenario={selectedScenario!}
 					selectedBackground={selectedBackground}
 					on:complete={handleInterviewComplete}
 				/>
@@ -518,7 +548,7 @@
 
 					<div class="risk-warning">
 						<span class="risk-badge-large {getRiskColor(pendingBackground.riskLevel)}">
-							{pendingBackground.riskLevel.toUpperCase()} RISK BACKGROUND
+							{getRiskLabel(pendingBackground.riskLevel)} RISK BACKGROUND
 						</span>
 					</div>
 

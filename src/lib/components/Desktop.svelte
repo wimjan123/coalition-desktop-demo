@@ -12,7 +12,7 @@
 	import { isGameInitialized, initializeNewGame, loadGameFromLocal, gameStore, startCampaign } from '../stores/gameStore.js';
 	import { setupKeyboardShortcuts } from '../utils/useKeyboard.js';
 	import { restoreLayout, setupAutoSave, saveLayout } from '../utils/usePersistence.js';
-	import type { PlayerCharacter, Party } from '../types/game.js';
+	import type { PlayerCharacter, Party, StartingScenario, CharacterBackground, InterviewPerformanceSummary } from '../types/game.js';
 
 	let desktopEl: HTMLElement;
 	let keyboardCleanup: (() => void) | null = null;
@@ -74,9 +74,17 @@
 		};
 	});
 
-	function handleCharacterCreationComplete(event: CustomEvent<{ player: PlayerCharacter; party: Party }>) {
-		const { player, party } = event.detail;
-		initializeNewGame(player, party, 'normal');
+	interface CreationCompleteDetail {
+		player: PlayerCharacter;
+		party: Party;
+		scenario: StartingScenario;
+		background: CharacterBackground;
+		interview: InterviewPerformanceSummary;
+	}
+
+	function handleCharacterCreationComplete(event: CustomEvent<CreationCompleteDetail>) {
+		const { player, party, scenario, background, interview } = event.detail;
+		initializeNewGame(player, party, scenario, background, interview, 'normal');
 		console.log('Game initialized with new character and party');
 	}
 

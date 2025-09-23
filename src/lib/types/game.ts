@@ -28,7 +28,7 @@ export interface StartingScenario {
 	id: string;
 	name: string;
 	description: string;
-	interviewerTone: 'hostile' | 'skeptical' | 'neutral' | 'sympathetic';
+	interviewerTone: 'hostile' | 'skeptical' | 'neutral' | 'sympathetic' | 'confrontational';
 	gameplayModifiers: {
 		approvalRating: number;
 		mediaRelations: number;
@@ -44,6 +44,27 @@ export interface InterviewResponse {
 	priority: number;
 	tone: 'aggressive' | 'defensive' | 'evasive' | 'confrontational' | 'diplomatic';
 	consistency: boolean; // Does this contradict previous answers?
+}
+
+export interface InterviewPerformanceScores {
+	consistency: number;
+	confidence: number;
+	authenticity: number;
+}
+
+export interface InterviewPerformanceRating {
+	score: number;
+	grade: string;
+	description: string;
+}
+
+export interface InterviewPerformanceSummary {
+	positions: PoliticalPosition[];
+	scores: InterviewPerformanceScores;
+	rating: InterviewPerformanceRating;
+	tonePattern: string[];
+	interviewerMoodProgression: string[];
+	contradictions?: string[];
 }
 
 export interface PlayerCharacter {
@@ -95,10 +116,24 @@ export interface GameState {
 	};
 	// Character creation state
 	selectedScenario?: StartingScenario;
+	approvalRating?: number;
+	mediaRelations?: number;
+	coalitionTrust?: number;
+	specialActions?: {
+		scenario: string[];
+		background: string[];
+	};
+	reputation?: { [key: string]: number };
+	demographicRelationships?: {
+		[groupId: string]: 'hostile' | 'skeptical' | 'neutral' | 'supportive' | 'enthusiastic';
+	};
 	interviewState?: {
 		responseTones: string[]; // Track player response patterns
 		contradictions: number; // Count of contradictory answers
 		personalityProfile: { [tone: string]: number }; // Scoring for different response styles
+		scores?: InterviewPerformanceScores;
+		rating?: InterviewPerformanceRating;
+		interviewerMoodProgression?: string[];
 	};
 	// Campaign data
 	population?: { [groupId: string]: import('./population.js').PopulationSegment };

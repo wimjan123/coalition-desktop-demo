@@ -27,10 +27,53 @@
 	let confidenceScore = 50;
 	let authenticityScore = 50;
 
+	// Response urgency system
+	let urgencyTimer = 0;
+	let isUrgentQuestion = false;
+	let timerInterval: number | null = null;
+	let urgencyWarning = false;
+
 	// Initialize interviewer mood based on scenario
 	$: {
 		if (selectedScenario) {
 			interviewerMood = selectedScenario.interviewerTone;
+		}
+	}
+
+	// Urgency timer functions
+	function startUrgencyTimer(timeLimit: number) {
+		if (timerInterval) clearInterval(timerInterval);
+		urgencyTimer = timeLimit;
+		isUrgentQuestion = true;
+		urgencyWarning = false;
+
+		timerInterval = setInterval(() => {
+			urgencyTimer--;
+			if (urgencyTimer <= 3) {
+				urgencyWarning = true;
+			}
+			if (urgencyTimer <= 0) {
+				handleTimerExpired();
+			}
+		}, 1000);
+	}
+
+	function stopUrgencyTimer() {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+		isUrgentQuestion = false;
+		urgencyWarning = false;
+		urgencyTimer = 0;
+	}
+
+	function handleTimerExpired() {
+		stopUrgencyTimer();
+		// Auto-select first (usually most defensive) option when time runs out
+		if (currentQuestion && currentQuestion.options.length > 0) {
+			const defaultOption = currentQuestion.options.find(opt => opt.tone === 'defensive') || currentQuestion.options[0];
+			selectAnswer(defaultOption);
 		}
 	}
 
@@ -55,6 +98,8 @@
 		};
 		followUpTo?: string; // Which question this follows up on
 		type: 'opening' | 'follow-up' | 'background-challenge' | 'consistency-check' | 'closing';
+		urgent?: boolean; // Time pressure for response
+		timeLimit?: number; // Seconds for urgent responses (default 15)
 	}
 
 	// Base question database - will be filtered dynamically
@@ -101,6 +146,8 @@
 		{
 			id: 'toeslagenaffaire-challenge',
 			type: 'background-challenge',
+			urgent: true,
+			timeLimit: 12,
 			conditions: {
 				background: ['toeslagenaffaire-whistleblower']
 			},
@@ -2536,6 +2583,9 @@
 		const currentQuestion = questionDatabase.find(q => q.id === currentQuestionId);
 		if (!currentQuestion) return;
 
+		// Stop urgency timer when answer is selected
+		stopUrgencyTimer();
+
 		// Check for consistency before recording response
 		const isConsistent = checkResponseConsistency(currentQuestion, option);
 
@@ -2976,6 +3026,8 @@
 		// Calculate final tone consistency score
 		consistencyScore = Math.round((consistencyScore + calculateToneConsistency()) / 2);
 
+		const contradictionSummary = getContradictionSummary();
+
 		// Dispatch interview completion with performance data
 		const performanceData = {
 			positions,
@@ -2986,7 +3038,8 @@
 			},
 			rating: getOverallInterviewRating(),
 			tonePattern: responseTones,
-			interviewerMoodProgression: [selectedScenario.interviewerTone, interviewerMood]
+			interviewerMoodProgression: [selectedScenario.interviewerTone, interviewerMood],
+			contradictions: contradictionSummary
 		};
 
 		isComplete = true;
@@ -3016,10 +3069,94 @@
 		dispatch('complete', interviewResults);
 	}
 
+	// Enhanced performance analysis functions
+	function generateInterviewerFeedback() {
+		const avgScore = (consistencyScore + confidenceScore + authenticityScore) / 3;
+		const toneProfile = buildPersonalityProfile(responseTones);
+		const dominantTone = Object.keys(toneProfile).reduce((a, b) =>
+			toneProfile[a] > toneProfile[b] ? a : b, Object.keys(toneProfile)[0] || 'diplomatic'
+		);
+
+		const interviewers = [
+			{ name: "Eva Jinek", context: "RTL Late Night" },
+			{ name: "Jeroen Pauw", context: "Pauw" },
+			{ name: "Sophie Hilbrand", context: "Sophie & Jeroen" }
+		];
+		const interviewer = interviewers[Math.floor(Math.random() * interviewers.length)];
+
+		let quote, coverage;
+
+		if (avgScore >= 75) {
+			quote = dominantTone === 'diplomatic'
+				? "A measured, thoughtful performance. This politician clearly has substance behind the soundbites."
+				: "Impressive conviction and authenticity. Even when taking strong positions, they remained coherent.";
+			coverage = {
+				type: "positive",
+				headline: "Rising Star Impresses in Debut Interview"
+			};
+		} else if (avgScore >= 50) {
+			quote = dominantTone === 'evasive'
+				? "Some concerning evasiveness on key issues, but showed moments of genuine insight."
+				: "Mixed performance - strong on some issues but consistency remains a concern.";
+			coverage = {
+				type: "mixed",
+				headline: "New Politician Shows Promise Despite Rough Edges"
+			};
+		} else {
+			quote = "This interview raises serious questions about their readiness for high office.";
+			coverage = {
+				type: "negative",
+				headline: "Troubling Interview Performance Sparks Concerns"
+			};
+		}
+
+		return { interviewer: interviewer.name, context: interviewer.context, quote, coverage };
+	}
+
+	function assessCoalitionImpact() {
+		const toneProfile = buildPersonalityProfile(responseTones);
+		const aggressiveScore = toneProfile.aggressive || 0;
+		const diplomaticScore = toneProfile.diplomatic || 0;
+		const confrontationalScore = toneProfile.confrontational || 0;
+
+		return [
+			{
+				party: "VVD", icon: "🏛️",
+				compatibility: diplomaticScore > 40 ? "high" : aggressiveScore > 40 ? "low" : "medium",
+				status: diplomaticScore > 40 ? "Compatible" : aggressiveScore > 40 ? "Concerns" : "Uncertain"
+			},
+			{
+				party: "D66", icon: "🔬",
+				compatibility: confrontationalScore < 30 && diplomaticScore > 30 ? "high" : "medium",
+				status: confrontationalScore < 30 && diplomaticScore > 30 ? "Favorable" : "Mixed"
+			},
+			{
+				party: "CDA", icon: "⛪",
+				compatibility: diplomaticScore > 35 && confrontationalScore < 25 ? "high" : "low",
+				status: diplomaticScore > 35 && confrontationalScore < 25 ? "Potential" : "Difficult"
+			},
+			{
+				party: "PvdA", icon: "🌹",
+				compatibility: aggressiveScore > 25 || confrontationalScore > 25 ? "medium" : "high",
+				status: aggressiveScore > 25 || confrontationalScore > 25 ? "Workable" : "Natural fit"
+			}
+		];
+	}
+
 	// Reactive statements
 	$: rawQuestion = currentQuestionId ? questionDatabase.find(q => q.id === currentQuestionId) : null;
 	$: currentQuestion = rawQuestion ? getPersonalityAdjustedQuestion(rawQuestion) : null;
 	$: progress = isComplete ? 100 : (answeredQuestions.length / Math.max(5, answeredQuestions.length + 1)) * 100;
+
+	// Start urgency timer when new urgent question is presented
+	$: {
+		if (currentQuestion && currentQuestion.urgent) {
+			const timeLimit = currentQuestion.timeLimit || 15;
+			startUrgencyTimer(timeLimit);
+		} else {
+			stopUrgencyTimer();
+		}
+	}
 </script>
 
 <div class="media-interview">
@@ -3049,7 +3186,7 @@
 		</div>
 	{:else if !isComplete}
 		<!-- Active Interview -->
-		<div class="live-interview">
+		<div class="live-interview" class:confrontational={selectedScenario.interviewerTone === 'confrontational' || interviewerMood === 'hostile'}>
 			<div class="interview-header">
 				<div class="live-indicator">
 					<span class="live-dot"></span>
@@ -3069,6 +3206,11 @@
 				</div>
 				<div class="question-counter">
 					Q{answeredQuestions.length + 1}
+					{#if isUrgentQuestion}
+						<div class="urgency-timer" class:warning={urgencyWarning}>
+							⏰ {urgencyTimer}s
+						</div>
+					{/if}
 				</div>
 			</div>
 
@@ -3080,9 +3222,30 @@
 				</div>
 
 				<div class="host-question">
-					<div class="host-avatar">🎤</div>
+					<div class="host-avatar interviewer-emotion">
+						<div class="emotion-icon">
+							{#if interviewerMood === 'hostile'}😠
+							{:else if interviewerMood === 'skeptical'}🤨
+							{:else if interviewerMood === 'sympathetic'}😊
+							{:else if selectedScenario.interviewerTone === 'confrontational'}😤
+							{:else}🎤{/if}
+						</div>
+						<div class="emotion-label">{interviewerMood.toUpperCase()}</div>
+					</div>
 					<div class="question-bubble mood-{interviewerMood}">
-						<p><strong>Journalist:</strong> "{currentQuestion.question}"</p>
+						<div class="interviewer-nameplate">
+							<strong>📺 Journalist</strong>
+							<div class="mood-intensity">
+								{#if interviewerMood === 'hostile' || selectedScenario.interviewerTone === 'confrontational'}
+									<span class="intensity-high">⚡⚡⚡</span>
+								{:else if interviewerMood === 'skeptical'}
+									<span class="intensity-medium">⚡⚡</span>
+								{:else}
+									<span class="intensity-low">⚡</span>
+								{/if}
+							</div>
+						</div>
+						<p>"{currentQuestion.question}"</p>
 					</div>
 				</div>
 
@@ -3199,32 +3362,111 @@
 							Interviewer mood: {selectedScenario.interviewerTone} → {interviewerMood}
 						</p>
 					</div>
+
+					<!-- Enhanced Performance Breakdown -->
+					<div class="performance-breakdown">
+						<h4>📈 Detailed Performance Analysis</h4>
+
+						<div class="breakdown-section">
+							<h5>🎯 Demographic Impact Preview</h5>
+							<div class="demographic-preview">
+								{#if responseTones.length > 0}
+									{@const toneProfile = buildPersonalityProfile(responseTones)}
+									{#if Object.keys(toneProfile).length > 0}
+										<div class="impact-grid">
+											{#if toneProfile.diplomatic > 30}
+												<div class="impact-item positive">
+													<span class="impact-icon">👔</span>
+													<span class="impact-text">Suburban families likely to view you as reasonable</span>
+												</div>
+											{/if}
+											{#if toneProfile.aggressive > 30}
+												<div class="impact-item mixed">
+													<span class="impact-icon">⚡</span>
+													<span class="impact-text">Working-class appeal, but may alienate moderates</span>
+												</div>
+											{/if}
+											{#if toneProfile.evasive > 20}
+												<div class="impact-item negative">
+													<span class="impact-icon">🔄</span>
+													<span class="impact-text">Evasiveness may reduce trust among all groups</span>
+												</div>
+											{/if}
+											{#if toneProfile.confrontational > 25}
+												<div class="impact-item mixed">
+													<span class="impact-icon">⚔️</span>
+													<span class="impact-text">Strong appeal to change-seekers, polarizing effect</span>
+												</div>
+											{/if}
+										</div>
+									{/if}
+								{/if}
+							</div>
+						</div>
+
+						<div class="breakdown-section">
+							<h5>🎤 Interviewer Assessment</h5>
+							<div class="interviewer-feedback">
+								{#if responseTones.length > 0}
+									{@const feedback = generateInterviewerFeedback()}
+									<div class="feedback-quote">
+										<div class="quote-mark">"</div>
+										<p class="feedback-text">{feedback.quote}</p>
+										<div class="feedback-attribution">— {feedback.interviewer}, {feedback.context}</div>
+									</div>
+									<div class="media-impact">
+										<span class="impact-label">Likely Media Coverage:</span>
+										<span class="coverage-prediction {feedback.coverage.type}">{feedback.coverage.headline}</span>
+									</div>
+								{/if}
+							</div>
+						</div>
+
+						<div class="breakdown-section">
+							<h5>⚖️ Coalition Compatibility</h5>
+							<div class="coalition-preview">
+								{#if responseTones.length > 0}
+									{@const coalitionImpact = assessCoalitionImpact()}
+									<div class="compatibility-grid">
+										{#each coalitionImpact as impact}
+											<div class="compatibility-item {impact.compatibility}">
+												<span class="party-icon">{impact.icon}</span>
+												<span class="party-name">{impact.party}</span>
+												<span class="compatibility-status">{impact.status}</span>
+											</div>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						</div>
+					</div>
 				</div>
 			{/if}
 
 				<!-- Consistency Analysis -->
-				{#if true}
-					{@const contradictionList = getContradictionSummary()}
-					{#if contradictionList.length > 0}
-						<div class="consistency-issues">
-							<h4>⚠️ Consistency Issues Detected</h4>
-							<ul class="contradiction-list">
-								{#each contradictionList as contradiction}
-									<li class="contradiction-item">{contradiction}</li>
-								{/each}
-							</ul>
-							<p class="consistency-note">
-								These contradictions may affect your credibility with voters and coalition partners.
-							</p>
-						</div>
-					{:else}
-						<div class="consistency-success">
-							<h4>✅ Consistent Messaging</h4>
-							<p>No major contradictions detected in your responses. Your positions appear coherent and authentic.</p>
-						</div>
-				{/if}
-			</div>
-			{/if}
+				<div class="consistency-analysis">
+					{#if true}
+						{@const contradictionList = getContradictionSummary()}
+						{#if contradictionList.length > 0}
+							<div class="consistency-issues">
+								<h4>⚠️ Consistency Issues Detected</h4>
+								<ul class="contradiction-list">
+									{#each contradictionList as contradiction}
+										<li class="contradiction-item">{contradiction}</li>
+									{/each}
+								</ul>
+								<p class="consistency-note">
+									These contradictions may affect your credibility with voters and coalition partners.
+								</p>
+							</div>
+						{:else}
+							<div class="consistency-success">
+								<h4>✅ Consistent Messaging</h4>
+								<p>No major contradictions detected in your responses. Your positions appear coherent and authentic.</p>
+							</div>
+						{/if}
+					{/if}
+				</div>
 
 			<div class="position-summary">
 				<h3>Your Political Platform</h3>
@@ -3315,6 +3557,80 @@
 	.host-avatar {
 		font-size: 48px;
 		filter: grayscale(100%) brightness(0.8);
+		transition: all 0.3s ease;
+	}
+
+	.interviewer-emotion {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 5px;
+		filter: none !important;
+		animation: emotion-entrance 0.5s ease-out;
+	}
+
+	@keyframes emotion-entrance {
+		from {
+			transform: scale(0.8);
+			opacity: 0;
+		}
+		to {
+			transform: scale(1);
+			opacity: 1;
+		}
+	}
+
+	.emotion-icon {
+		font-size: 52px;
+		transition: all 0.3s ease;
+	}
+
+	.emotion-label {
+		font-size: 10px;
+		font-weight: bold;
+		color: #ffffff;
+		text-align: center;
+		background: rgba(0, 0, 0, 0.6);
+		padding: 2px 6px;
+		border-radius: 8px;
+		text-shadow: none;
+		min-width: 60px;
+	}
+
+	.interviewer-nameplate {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 10px;
+	}
+
+	.mood-intensity {
+		font-size: 12px;
+	}
+
+	.intensity-high {
+		color: #ff0000;
+		animation: intensity-pulse 1s ease-in-out infinite;
+	}
+
+	.intensity-medium {
+		color: #ffc107;
+		animation: intensity-pulse 1.5s ease-in-out infinite;
+	}
+
+	.intensity-low {
+		color: #28a745;
+		opacity: 0.7;
+	}
+
+	@keyframes intensity-pulse {
+		0%, 100% {
+			opacity: 0.7;
+		}
+		50% {
+			opacity: 1;
+			transform: scale(1.1);
+		}
 	}
 
 	.intro-text {
@@ -3356,6 +3672,24 @@
 		border-radius: 15px;
 		overflow: hidden;
 		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+		transition: all 0.5s ease;
+	}
+
+	/* Confrontational Interview Enhanced Styles */
+	.live-interview.confrontational {
+		background: linear-gradient(135deg, #1a0000 0%, #2a0000 100%);
+		border: 2px solid #ff0000;
+		box-shadow: 0 0 30px rgba(255, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.5);
+		animation: subtle-pulse 3s ease-in-out infinite;
+	}
+
+	@keyframes subtle-pulse {
+		0%, 100% {
+			box-shadow: 0 0 30px rgba(255, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.5);
+		}
+		50% {
+			box-shadow: 0 0 40px rgba(255, 0, 0, 0.5), 0 10px 30px rgba(0, 0, 0, 0.5);
+		}
 	}
 
 	.interview-header {
@@ -3406,6 +3740,45 @@
 
 	.question-counter {
 		font-weight: bold;
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.urgency-timer {
+		background: rgba(255, 165, 0, 0.8);
+		color: white;
+		padding: 4px 8px;
+		border-radius: 15px;
+		font-size: 12px;
+		font-weight: bold;
+		animation: timer-pulse 1s ease-in-out infinite;
+		border: 2px solid rgba(255, 165, 0, 0.5);
+	}
+
+	.urgency-timer.warning {
+		background: rgba(255, 0, 0, 0.9);
+		border-color: #ff0000;
+		animation: urgent-flash 0.5s ease-in-out infinite;
+	}
+
+	@keyframes timer-pulse {
+		0%, 100% {
+			transform: scale(1);
+		}
+		50% {
+			transform: scale(1.05);
+		}
+	}
+
+	@keyframes urgent-flash {
+		0%, 100% {
+			background: rgba(255, 0, 0, 0.9);
+		}
+		50% {
+			background: rgba(255, 0, 0, 1);
+			transform: scale(1.1);
+		}
 	}
 
 	.interview-content {
@@ -3625,6 +3998,170 @@
 		border: 1px solid rgba(255, 255, 255, 0.3);
 	}
 
+	/* Enhanced Performance Breakdown Styles */
+	.performance-breakdown {
+		margin-top: 25px;
+		border-top: 2px solid rgba(255, 255, 255, 0.1);
+		padding-top: 25px;
+	}
+
+	.breakdown-section {
+		margin-bottom: 20px;
+		background: rgba(255, 255, 255, 0.03);
+		border-radius: 8px;
+		padding: 15px;
+	}
+
+	.breakdown-section h5 {
+		color: #00aaff;
+		margin-bottom: 15px;
+		font-size: 14px;
+	}
+
+	.impact-grid {
+		display: grid;
+		gap: 8px;
+	}
+
+	.impact-item {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 8px 12px;
+		border-radius: 6px;
+		font-size: 13px;
+	}
+
+	.impact-item.positive {
+		background: rgba(16, 185, 129, 0.1);
+		border-left: 3px solid #10b981;
+	}
+
+	.impact-item.negative {
+		background: rgba(239, 68, 68, 0.1);
+		border-left: 3px solid #ef4444;
+	}
+
+	.impact-item.mixed {
+		background: rgba(245, 158, 11, 0.1);
+		border-left: 3px solid #f59e0b;
+	}
+
+	.impact-icon {
+		font-size: 16px;
+	}
+
+	.feedback-quote {
+		background: rgba(0, 0, 0, 0.3);
+		border-radius: 10px;
+		padding: 15px;
+		margin-bottom: 10px;
+		position: relative;
+	}
+
+	.quote-mark {
+		font-size: 40px;
+		position: absolute;
+		top: -10px;
+		left: 10px;
+		color: #00aaff;
+		opacity: 0.3;
+	}
+
+	.feedback-text {
+		font-style: italic;
+		margin: 0;
+		padding-left: 20px;
+		line-height: 1.5;
+	}
+
+	.feedback-attribution {
+		text-align: right;
+		margin-top: 10px;
+		font-size: 12px;
+		color: #888;
+	}
+
+	.media-impact {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		font-size: 13px;
+	}
+
+	.impact-label {
+		font-weight: bold;
+		color: #ccc;
+	}
+
+	.coverage-prediction {
+		padding: 4px 8px;
+		border-radius: 12px;
+		font-weight: bold;
+		font-size: 12px;
+	}
+
+	.coverage-prediction.positive {
+		background: rgba(16, 185, 129, 0.2);
+		color: #10b981;
+	}
+
+	.coverage-prediction.mixed {
+		background: rgba(245, 158, 11, 0.2);
+		color: #f59e0b;
+	}
+
+	.coverage-prediction.negative {
+		background: rgba(239, 68, 68, 0.2);
+		color: #ef4444;
+	}
+
+	.compatibility-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+		gap: 10px;
+	}
+
+	.compatibility-item {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		padding: 10px;
+		border-radius: 8px;
+		border: 2px solid;
+	}
+
+	.compatibility-item.high {
+		border-color: #10b981;
+		background: rgba(16, 185, 129, 0.1);
+	}
+
+	.compatibility-item.medium {
+		border-color: #f59e0b;
+		background: rgba(245, 158, 11, 0.1);
+	}
+
+	.compatibility-item.low {
+		border-color: #ef4444;
+		background: rgba(239, 68, 68, 0.1);
+	}
+
+	.party-icon {
+		font-size: 20px;
+		margin-bottom: 5px;
+	}
+
+	.party-name {
+		font-weight: bold;
+		font-size: 12px;
+	}
+
+	.compatibility-status {
+		font-size: 11px;
+		opacity: 0.8;
+	}
+
 	.mood-professional {
 		background: rgba(0, 170, 255, 0.3);
 		color: #00aaff;
@@ -3648,6 +4185,24 @@
 	.question-bubble.mood-hostile {
 		border-color: #dc3545;
 		background: linear-gradient(135deg, #4a1a1a 0%, #5a2222 100%);
+		box-shadow: 0 0 20px rgba(220, 53, 69, 0.3);
+	}
+
+	.question-bubble.mood-confrontational {
+		border-color: #ff0000;
+		background: linear-gradient(135deg, #5a0000 0%, #7a0000 100%);
+		box-shadow: 0 0 25px rgba(255, 0, 0, 0.4);
+		border-width: 3px;
+		animation: confrontational-glow 2s ease-in-out infinite alternate;
+	}
+
+	@keyframes confrontational-glow {
+		from {
+			box-shadow: 0 0 25px rgba(255, 0, 0, 0.4);
+		}
+		to {
+			box-shadow: 0 0 35px rgba(255, 0, 0, 0.6);
+		}
 	}
 
 	.question-bubble.mood-skeptical {

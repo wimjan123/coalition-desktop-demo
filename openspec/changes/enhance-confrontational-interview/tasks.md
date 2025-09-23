@@ -43,29 +43,29 @@
 - [x] 6.5 Add consequence preview system for response choices
 
 ## 7. Game Integration
-- [ ] 7.1 Connect starting scenario to initial game state modifiers
-- [ ] 7.2 Apply controversial background penalties and bonuses
-- [ ] 7.3 Implement interview performance effects on approval ratings
-- [ ] 7.4 Add special campaign actions for controversial backgrounds
-- [ ] 7.5 Create demographic relationship effects from interview tone
+- [x] 7.1 Connect starting scenario to initial game state modifiers
+- [x] 7.2 Apply controversial background penalties and bonuses
+- [x] 7.3 Implement interview performance effects on approval ratings
+- [x] 7.4 Add special campaign actions for controversial backgrounds
+- [x] 7.5 Create demographic relationship effects from interview tone
 
 ## 8. UI/UX Polish
-- [ ] 8.1 Design confrontational interview visual style (more intense than current)
-- [ ] 8.2 Add interviewer emotion indicators (skeptical, aggressive, surprised)
-- [ ] 8.3 Implement response urgency system (time pressure for some questions)
+- [x] 8.1 Design confrontational interview visual style (more intense than current)
+- [x] 8.2 Add interviewer emotion indicators (skeptical, aggressive, surprised)
+- [x] 8.3 Implement response urgency system (time pressure for some questions)
 - [ ] 8.4 Add interview tension music and sound effects
-- [ ] 8.5 Create post-interview summary with performance breakdown
+- [x] 8.5 Create post-interview summary with performance breakdown
 
 ## 9. Balance and Testing
-- [ ] 9.1 Test all controversial background + scenario combinations for viability
-- [ ] 9.2 Adjust starting modifier values based on playtesting
-- [ ] 9.3 Validate question branching logic for all paths
-- [ ] 9.4 Test interview performance consequences for realism
-- [ ] 9.5 Ensure controversial paths remain challenging but winnable
+- [x] 9.1 Test all controversial background + scenario combinations for viability
+- [x] 9.2 Adjust starting modifier values based on playtesting
+- [x] 9.3 Validate question branching logic for all paths
+- [x] 9.4 Test interview performance consequences for realism
+- [x] 9.5 Ensure controversial paths remain challenging but winnable
 
 ## 10. Integration Testing
-- [ ] 10.1 Test character creation flow with all new components
-- [ ] 10.2 Validate data flow from scenario selection through interview completion
-- [ ] 10.3 Test interview system compatibility with existing campaign mechanics
-- [ ] 10.4 Verify special campaign actions work correctly for controversial backgrounds
-- [ ] 10.5 Test edge cases and error handling for complex character combinations
+- [x] 10.1 Test character creation flow with all new components
+- [x] 10.2 Validate data flow from scenario selection through interview completion
+- [x] 10.3 Test interview system compatibility with existing campaign mechanics
+- [x] 10.4 Verify special campaign actions work correctly for controversial backgrounds
+- [x] 10.5 Test edge cases and error handling for complex character combinations

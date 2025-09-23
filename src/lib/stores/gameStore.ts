@@ -1,8 +1,313 @@
 import { writable } from 'svelte/store';
-import type { GameState, PlayerCharacter, Party, CampaignVideo, RegionalCampaignData } from '../types/game.js';
+import type {
+	GameState,
+	PlayerCharacter,
+	Party,
+	CampaignVideo,
+	RegionalCampaignData,
+	StartingScenario,
+	CharacterBackground,
+	InterviewPerformanceSummary
+} from '../types/game.js';
 import { initializePopulation, calculateCampaignImpact, DUTCH_DEMOGRAPHICS } from '../types/population.js';
+import type { PopulationSegment } from '../types/population.js';
 import { DUTCH_REGIONS } from '../types/regions.js';
-import { DUTCH_OPPOSITION_PARTIES } from '../types/game.js';
+import { CHARACTER_BACKGROUNDS, DUTCH_OPPOSITION_PARTIES, STARTING_SCENARIOS } from '../types/game.js';
+
+const BASE_CORE_METRICS = {
+	approvalRating: 48,
+	mediaRelations: 45,
+	coalitionTrust: 55
+};
+
+const BACKGROUND_METRIC_MAP: Record<string, keyof typeof BASE_CORE_METRICS> = {
+	mainstreamMediaRelations: 'mediaRelations',
+	establishmentTrust: 'coalitionTrust',
+	antiEstablishmentCredibility: 'approvalRating'
+};
+
+function clampMetric(value: number): number {
+	return Math.max(0, Math.min(100, value));
+}
+
+function resolveBackground(player: PlayerCharacter, background?: CharacterBackground): CharacterBackground {
+	if (background) return background;
+	const existing = CHARACTER_BACKGROUNDS.find(item => item.id === player.background);
+	return existing || CHARACTER_BACKGROUNDS[0];
+}
+
+function buildPersonalityProfile(tones: string[]): { [tone: string]: number } {
+	if (!tones || tones.length === 0) {
+		return {};
+	}
+
+	const counts: Record<string, number> = {};
+	tones.forEach(tone => {
+		counts[tone] = (counts[tone] || 0) + 1;
+	});
+
+	const total = tones.length;
+	const profile: Record<string, number> = {};
+	Object.entries(counts).forEach(([tone, count]) => {
+		profile[tone] = Math.round((count / total) * 100);
+	});
+
+	return profile;
+}
+
+function calculateInitialCoreMetrics(
+	scenario: StartingScenario | undefined,
+	background: CharacterBackground,
+	interview?: InterviewPerformanceSummary
+) {
+	const metrics = { ...BASE_CORE_METRICS };
+
+	if (scenario) {
+		metrics.approvalRating += scenario.gameplayModifiers.approvalRating;
+		metrics.mediaRelations += scenario.gameplayModifiers.mediaRelations;
+		metrics.coalitionTrust += scenario.gameplayModifiers.coalitionTrust;
+	}
+
+	if (interview) {
+		const interviewScore = interview.rating?.score ?? 60;
+		metrics.approvalRating += Math.round((interviewScore - 60) / 4);
+
+		if (interview.scores) {
+			metrics.mediaRelations += Math.round((interview.scores.confidence - 60) / 3);
+			metrics.coalitionTrust += Math.round((interview.scores.consistency - 60) / 3);
+		}
+	}
+
+	Object.entries(background.startingPenalties || {}).forEach(([key, value]) => {
+		const metricKey = BACKGROUND_METRIC_MAP[key];
+		if (metricKey) {
+			metrics[metricKey] += value;
+		}
+	});
+
+	return {
+		approvalRating: clampMetric(metrics.approvalRating),
+		mediaRelations: clampMetric(metrics.mediaRelations),
+		coalitionTrust: clampMetric(metrics.coalitionTrust)
+	};
+}
+
+const BACKGROUND_POPULATION_EFFECTS: Record<string, {
+	groups: string[];
+	supportWeight: number;
+	awarenessWeight?: number;
+	enthusiasmWeight?: number;
+	relationshipWeight?: number;
+}> = {
+	farmerSupport: {
+		groups: ['rural-traditional'],
+		supportWeight: 0.12,
+		enthusiasmWeight: 0.08,
+		relationshipWeight: 0.35
+	},
+	urbanAppeal: {
+		groups: ['urban-progressive', 'young-professionals'],
+		supportWeight: 0.1,
+		relationshipWeight: 0.3
+	},
+	environmentalCredibility: {
+		groups: ['urban-progressive', 'young-professionals'],
+		supportWeight: 0.09,
+		awarenessWeight: 0.25,
+		relationshipWeight: 0.28
+	},
+	antiEstablishmentCredibility: {
+		groups: ['working-class', 'urban-progressive'],
+		supportWeight: 0.1,
+		relationshipWeight: 0.32
+	},
+	establishmentTrust: {
+		groups: ['suburban-families', 'seniors'],
+		supportWeight: 0.09,
+		relationshipWeight: 0.3
+	},
+	mainstreamMediaRelations: {
+		groups: ['urban-progressive', 'suburban-families', 'young-professionals'],
+		supportWeight: 0.07,
+		awarenessWeight: 0.3,
+		relationshipWeight: 0.25
+	}
+};
+
+const TONE_EFFECTS: Record<string, {
+	positive: string[];
+	negative: string[];
+	supportWeight: number;
+	awarenessWeight?: number;
+	enthusiasmWeight?: number;
+	positiveRelationshipWeight: number;
+	negativeRelationshipWeight: number;
+}> = {
+	diplomatic: {
+		positive: ['urban-progressive', 'suburban-families', 'seniors'],
+		negative: ['working-class'],
+		supportWeight: 2.4,
+		awarenessWeight: 2.0,
+		enthusiasmWeight: 3.0,
+		positiveRelationshipWeight: 32,
+		negativeRelationshipWeight: 20
+	},
+	aggressive: {
+		positive: ['working-class', 'rural-traditional'],
+		negative: ['urban-progressive', 'seniors'],
+		supportWeight: 2.6,
+		awarenessWeight: 1.2,
+		enthusiasmWeight: 3.5,
+		positiveRelationshipWeight: 30,
+		negativeRelationshipWeight: 28
+	},
+	defensive: {
+		positive: ['suburban-families', 'seniors'],
+		negative: ['working-class'],
+		supportWeight: 1.8,
+		awarenessWeight: 1.6,
+		enthusiasmWeight: 2.2,
+		positiveRelationshipWeight: 24,
+		negativeRelationshipWeight: 18
+	},
+	confrontational: {
+		positive: ['working-class'],
+		negative: ['suburban-families', 'seniors'],
+		supportWeight: 2.1,
+		awarenessWeight: 1.5,
+		enthusiasmWeight: 3.2,
+		positiveRelationshipWeight: 26,
+		negativeRelationshipWeight: 24
+	},
+	evasive: {
+		positive: [],
+		negative: ['urban-progressive', 'young-professionals', 'suburban-families'],
+		supportWeight: 2.0,
+		awarenessWeight: 2.4,
+		enthusiasmWeight: 2.5,
+		positiveRelationshipWeight: 0,
+		negativeRelationshipWeight: 34
+	}
+};
+
+function clampSupport(value: number): number {
+	return Math.max(0.05, Math.min(100, Number(value.toFixed(2))));
+}
+
+function clampAwareness(value: number): number {
+	return Math.max(0, Math.min(100, Number(value.toFixed(2))));
+}
+
+function clampEnthusiasm(value: number): number {
+	return Math.max(0, Math.min(100, Number(value.toFixed(2))));
+}
+
+function applyBackgroundPopulationModifiers(
+	population: { [groupId: string]: PopulationSegment },
+	penalties: { [key: string]: number } | undefined,
+	relationshipScores: Record<string, number>
+) {
+	if (!penalties) return;
+
+	Object.entries(penalties).forEach(([key, value]) => {
+		if (!value) return;
+		const effect = BACKGROUND_POPULATION_EFFECTS[key];
+		if (!effect) return;
+
+		effect.groups.forEach(groupId => {
+			const segment = population[groupId];
+			if (!segment) return;
+
+			if (effect.supportWeight) {
+				segment.currentSupport = clampSupport(
+					segment.currentSupport + (value * effect.supportWeight) / 10
+				);
+			}
+
+			if (effect.awarenessWeight) {
+				segment.awareness = clampAwareness(
+					segment.awareness + (value * effect.awarenessWeight) / 10
+				);
+			}
+
+			if (effect.enthusiasmWeight) {
+				segment.enthusiasm = clampEnthusiasm(
+					segment.enthusiasm + (value * effect.enthusiasmWeight) / 10
+				);
+			}
+
+			if (effect.relationshipWeight) {
+				relationshipScores[groupId] = (relationshipScores[groupId] || 0) + value * effect.relationshipWeight;
+			}
+		});
+	});
+}
+
+function applyInterviewToneEffects(
+	population: { [groupId: string]: PopulationSegment },
+	toneProfile: { [tone: string]: number } | undefined,
+	relationshipScores: Record<string, number>
+) {
+	if (!toneProfile) return;
+
+	Object.entries(toneProfile).forEach(([tone, share]) => {
+		if (!share) return;
+		const effect = TONE_EFFECTS[tone];
+		if (!effect) return;
+
+		const shareRatio = share / 100;
+
+		effect.positive.forEach(groupId => {
+			const segment = population[groupId];
+			if (!segment) return;
+			segment.currentSupport = clampSupport(segment.currentSupport + shareRatio * effect.supportWeight);
+			if (effect.awarenessWeight) {
+				segment.awareness = clampAwareness(segment.awareness + shareRatio * effect.awarenessWeight);
+			}
+			if (effect.enthusiasmWeight) {
+				segment.enthusiasm = clampEnthusiasm(segment.enthusiasm + shareRatio * effect.enthusiasmWeight);
+			}
+			relationshipScores[groupId] = (relationshipScores[groupId] || 0) + shareRatio * effect.positiveRelationshipWeight;
+		});
+
+		effect.negative.forEach(groupId => {
+			const segment = population[groupId];
+			if (!segment) return;
+			segment.currentSupport = clampSupport(segment.currentSupport - shareRatio * effect.supportWeight);
+			if (effect.awarenessWeight) {
+				segment.awareness = clampAwareness(segment.awareness - shareRatio * effect.awarenessWeight);
+			}
+			if (effect.enthusiasmWeight) {
+				segment.enthusiasm = clampEnthusiasm(segment.enthusiasm - shareRatio * effect.enthusiasmWeight);
+			}
+			relationshipScores[groupId] = (relationshipScores[groupId] || 0) - shareRatio * effect.negativeRelationshipWeight;
+		});
+	});
+}
+
+function deriveDemographicRelationships(
+	relationshipScores: Record<string, number>,
+	population: { [groupId: string]: PopulationSegment }
+) {
+	const relationships: { [groupId: string]: 'hostile' | 'skeptical' | 'neutral' | 'supportive' | 'enthusiastic' } = {};
+
+	Object.keys(population).forEach(groupId => {
+		const score = relationshipScores[groupId] || 0;
+		if (score >= 25) {
+			relationships[groupId] = 'enthusiastic';
+		} else if (score >= 10) {
+			relationships[groupId] = 'supportive';
+		} else if (score <= -25) {
+			relationships[groupId] = 'hostile';
+		} else if (score <= -10) {
+			relationships[groupId] = 'skeptical';
+		} else {
+			relationships[groupId] = 'neutral';
+		}
+	});
+
+	return relationships;
+}
 
 // Game state store
 export const gameStore = writable<GameState | null>(null);
@@ -11,7 +316,53 @@ export const gameStore = writable<GameState | null>(null);
 export const isGameInitialized = writable<boolean>(false);
 
 // Initialize a new game
-export function initializeNewGame(player: PlayerCharacter, party: Party, difficulty: 'easy' | 'normal' | 'hard' = 'normal') {
+export function initializeNewGame(
+	player: PlayerCharacter,
+	party: Party,
+	scenarioOrDifficulty?: StartingScenario | 'easy' | 'normal' | 'hard',
+	backgroundOrDifficulty?: CharacterBackground | 'easy' | 'normal' | 'hard',
+	interviewOrDifficulty?: InterviewPerformanceSummary | 'easy' | 'normal' | 'hard',
+	explicitDifficulty: 'easy' | 'normal' | 'hard' = 'normal'
+) {
+	let scenario: StartingScenario | undefined;
+	let background: CharacterBackground | undefined;
+	let interview: InterviewPerformanceSummary | undefined;
+	let difficulty: 'easy' | 'normal' | 'hard' = 'normal';
+
+	if (scenarioOrDifficulty) {
+		if (typeof scenarioOrDifficulty === 'string') {
+			difficulty = scenarioOrDifficulty;
+		} else {
+			scenario = scenarioOrDifficulty;
+		}
+	}
+
+	if (backgroundOrDifficulty) {
+		if (typeof backgroundOrDifficulty === 'string') {
+			difficulty = backgroundOrDifficulty;
+		} else {
+			background = backgroundOrDifficulty;
+		}
+	}
+
+	if (interviewOrDifficulty) {
+		if (typeof interviewOrDifficulty === 'string') {
+			difficulty = interviewOrDifficulty;
+		} else {
+			interview = interviewOrDifficulty;
+		}
+	}
+
+	if (explicitDifficulty) {
+		difficulty = explicitDifficulty;
+	}
+
+	const resolvedScenario = scenario || STARTING_SCENARIOS.find(item => item.id === 'new-party') || STARTING_SCENARIOS[0];
+	const resolvedBackground = resolveBackground(player, background);
+	const initializedPlayer: PlayerCharacter = { ...player, background: resolvedBackground.id };
+	const coreMetrics = calculateInitialCoreMetrics(resolvedScenario, resolvedBackground, interview);
+	const tonePattern = interview?.tonePattern ?? [];
+
 	const crisisScenarios = [
 		{
 			headline: "COALITION COLLAPSES: Rutte Cabinet Falls Over Immigration Policy",
@@ -31,14 +382,31 @@ export function initializeNewGame(player: PlayerCharacter, party: Party, difficu
 	];
 
 	const newGameState: GameState = {
-		player,
+		player: initializedPlayer,
 		playerParty: party,
 		currentPhase: 'campaign-intro',
 		gameDate: new Date('2023-01-01'), // Start in election year
 		difficulty,
 		isFirstTime: true,
 		daysUntilElection: 60,
-		currentCrisis: crisisScenarios[0] // Start with immigration crisis for consistency
+		currentCrisis: crisisScenarios[0],
+		selectedScenario: resolvedScenario,
+		approvalRating: coreMetrics.approvalRating,
+		mediaRelations: coreMetrics.mediaRelations,
+		coalitionTrust: coreMetrics.coalitionTrust,
+		specialActions: {
+			scenario: [...(resolvedScenario.gameplayModifiers.specialActions || [])],
+			background: [...(resolvedBackground.uniqueOpportunities || [])]
+		},
+		reputation: { ...(resolvedBackground.startingPenalties || {}) },
+		interviewState: {
+			responseTones: tonePattern,
+			contradictions: interview?.contradictions ? interview.contradictions.length : 0,
+			personalityProfile: buildPersonalityProfile(tonePattern),
+			scores: interview?.scores,
+			rating: interview?.rating,
+			interviewerMoodProgression: interview?.interviewerMoodProgression
+		}
 	};
 
 	gameStore.set(newGameState);
@@ -84,6 +452,10 @@ export function startCampaign() {
 
 		// Initialize campaign-specific data
 		const population = initializePopulation();
+		const relationshipScores: Record<string, number> = {};
+		applyBackgroundPopulationModifiers(population, state.reputation, relationshipScores);
+		applyInterviewToneEffects(population, state.interviewState?.personalityProfile, relationshipScores);
+		const demographicRelationships = deriveDemographicRelationships(relationshipScores, population);
 		const initialPolling = calculateInitialPolling(population);
 		const regionalData = initializeRegionalData(state.playerParty);
 
@@ -108,7 +480,8 @@ export function startCampaign() {
 			regionalData,
 			nationalCampaignFocus: 'national', // Start with national focus
 			oppositionParties: DUTCH_OPPOSITION_PARTIES,
-			oppositionPolling
+			oppositionPolling,
+			demographicRelationships
 		};
 	});
 }

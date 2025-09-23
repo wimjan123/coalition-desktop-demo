@@ -42,6 +42,12 @@
 	$: oppositionParties = gameState?.oppositionParties || [];
 	$: oppositionPolling = gameState?.oppositionPolling || {};
 	$: newsSystem = $newsSystemStore;
+	$: approvalRating = gameState?.approvalRating ?? 45;
+	$: mediaRelations = gameState?.mediaRelations ?? 40;
+	$: coalitionTrust = gameState?.coalitionTrust ?? 50;
+	$: selectedScenario = gameState?.selectedScenario;
+	$: specialActions = gameState?.specialActions || { scenario: [], background: [] };
+	$: demographicRelationships = gameState?.demographicRelationships || {};
 
 	// Calculate campaign mode based on days remaining and polling
 	$: {
@@ -190,6 +196,7 @@
 
 		let status = 'stable';
 		let insight = '';
+		const relationship = demographicRelationships[group.id] || 'neutral';
 
 		if (support > 40) {
 			status = 'strong';
@@ -209,7 +216,8 @@
 			support: support,
 			awareness: awareness,
 			status,
-			insight
+			insight,
+			relationship
 		};
 	}).sort((a, b) => b.support - a.support) : [];
 
@@ -259,6 +267,59 @@
 		if (polling < 30) return '#d97706';
 		if (polling < 40) return '#65a30d';
 		return '#16a34a';
+	}
+
+	function getApprovalColor(value: number): string {
+		if (value >= 65) return '#16a34a';
+		if (value >= 55) return '#65a30d';
+		if (value >= 45) return '#fbbf24';
+		if (value >= 35) return '#f97316';
+		return '#ef4444';
+	}
+
+	function getApprovalLabel(value: number): string {
+		if (value >= 65) return 'Mandate';
+		if (value >= 55) return 'Strong';
+		if (value >= 45) return 'Shaky';
+		if (value >= 35) return 'Vulnerable';
+		return 'Crisis';
+	}
+
+	function getRelationColor(value: number): string {
+		if (value >= 75) return '#38bdf8';
+		if (value >= 60) return '#0ea5e9';
+		if (value >= 45) return '#facc15';
+		if (value >= 30) return '#fb923c';
+		return '#ef4444';
+	}
+
+	function getRelationLabel(value: number): string {
+		if (value >= 75) return 'Allied';
+		if (value >= 60) return 'Favorable';
+		if (value >= 45) return 'Cautious';
+		if (value >= 30) return 'Strained';
+		return 'Hostile';
+	}
+
+	function getTrustColor(value: number): string {
+		if (value >= 70) return '#a855f7';
+		if (value >= 55) return '#8b5cf6';
+		if (value >= 40) return '#facc15';
+		if (value >= 25) return '#fb923c';
+		return '#ef4444';
+	}
+
+	function getTrustLabel(value: number): string {
+		if (value >= 70) return 'Secure';
+		if (value >= 55) return 'Workable';
+		if (value >= 40) return 'Fragile';
+		if (value >= 25) return 'Tenuous';
+		return 'Collapse Risk';
+	}
+
+	function formatRelationship(status: string): string {
+		if (!status) return 'Neutral';
+		return status.charAt(0).toUpperCase() + status.slice(1);
 	}
 
 	function getThreatLevel(): { level: string; color: string; description: string } {
@@ -420,6 +481,27 @@
 				</div>
 				<div class="metric-label">National Polling</div>
 			</div>
+			<div class="metric approval-metric">
+				<div class="metric-value" style="color: {getApprovalColor(approvalRating)}">
+					{approvalRating.toFixed(0)}%
+				</div>
+				<div class="metric-label">National Approval</div>
+				<div class="metric-subtitle">{getApprovalLabel(approvalRating)}</div>
+			</div>
+			<div class="metric relations-metric">
+				<div class="metric-value" style="color: {getRelationColor(mediaRelations)}">
+					{mediaRelations.toFixed(0)}
+				</div>
+				<div class="metric-label">Media Relations</div>
+				<div class="metric-subtitle">{getRelationLabel(mediaRelations)}</div>
+			</div>
+			<div class="metric trust-metric">
+				<div class="metric-value" style="color: {getTrustColor(coalitionTrust)}">
+					{coalitionTrust.toFixed(0)}
+				</div>
+				<div class="metric-label">Coalition Trust</div>
+				<div class="metric-subtitle">{getTrustLabel(coalitionTrust)}</div>
+			</div>
 			<div class="metric budget-metric">
 				<div class="metric-value" class:critical={campaignBudget < 10000}>
 					{formatBudget(campaignBudget)}
@@ -488,6 +570,14 @@
 								</span>
 							</div>
 							<div class="demo-insight">{group.insight}</div>
+							<div
+								class="demo-relationship"
+								class:positive={group.relationship === 'supportive'}
+								class:enthusiastic={group.relationship === 'enthusiastic'}
+								class:negative={group.relationship === 'skeptical' || group.relationship === 'hostile'}
+							>
+								{formatRelationship(group.relationship)}
+							</div>
 						</div>
 					{/each}
 				</div>
@@ -615,6 +705,35 @@
 			</button>
 
 		</div>
+
+		{#if (specialActions.scenario.length + specialActions.background.length) > 0}
+			<div class="special-actions-panel">
+				<div class="actions-column">
+					<h4>Scenario Levers{#if selectedScenario} · {selectedScenario.name}{/if}</h4>
+					{#if specialActions.scenario.length > 0}
+						<ul class="action-list">
+							{#each specialActions.scenario as action}
+								<li class="action-chip">🎯 {action}</li>
+							{/each}
+						</ul>
+					{:else}
+						<p class="action-empty">No scenario levers unlocked yet.</p>
+					{/if}
+				</div>
+				<div class="actions-column">
+					<h4>Background Plays</h4>
+					{#if specialActions.background.length > 0}
+						<ul class="action-list">
+							{#each specialActions.background as action}
+								<li class="action-chip">🧭 {action}</li>
+							{/each}
+						</ul>
+					{:else}
+						<p class="action-empty">No background actions unlocked.</p>
+					{/if}
+				</div>
+			</div>
+		{/if}
 
 		<div class="day-controls">
 			<div class="day-status">
@@ -800,11 +919,13 @@
 
 	.vital-metrics {
 		display: flex;
-		gap: 30px;
+		flex-wrap: wrap;
+		gap: 20px;
 	}
 
 	.metric {
 		text-align: center;
+		min-width: 150px;
 	}
 
 	.metric-value {
@@ -823,6 +944,14 @@
 		color: #94a3b8;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
+	}
+
+	.metric-subtitle {
+		font-size: 10px;
+		color: #cbd5f5;
+		text-transform: uppercase;
+		letter-spacing: 0.4px;
+		margin-top: 2px;
 	}
 
 	/* Command Interface */
@@ -1038,6 +1167,35 @@
 		line-height: 1.4;
 	}
 
+	.demo-relationship {
+		margin-top: 10px;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 10px;
+		text-transform: uppercase;
+		letter-spacing: 0.6px;
+		padding: 4px 10px;
+		border-radius: 9999px;
+		background: rgba(148, 163, 184, 0.2);
+		color: #e2e8f0;
+	}
+
+	.demo-relationship.positive {
+		background: rgba(34, 197, 94, 0.2);
+		color: #bbf7d0;
+	}
+
+	.demo-relationship.enthusiastic {
+		background: rgba(59, 130, 246, 0.25);
+		color: #bfdbfe;
+	}
+
+	.demo-relationship.negative {
+		background: rgba(239, 68, 68, 0.2);
+		color: #fecaca;
+	}
+
 	/* Intelligence Feed */
 	.intelligence-feed {
 		background: rgba(0, 0, 0, 0.2);
@@ -1224,8 +1382,9 @@
 	/* Command Center */
 	.command-center {
 		display: flex;
-		justify-content: space-between;
-		align-items: center;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 16px;
 		padding: 20px 30px;
 		background: rgba(0, 0, 0, 0.4);
 		backdrop-filter: blur(10px);
@@ -1235,6 +1394,62 @@
 	.primary-actions {
 		display: flex;
 		gap: 15px;
+		flex-wrap: wrap;
+		justify-content: flex-start;
+	}
+
+	.special-actions-panel {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 16px;
+		padding: 16px;
+		background: rgba(15, 23, 42, 0.35);
+		border: 1px solid rgba(148, 163, 184, 0.2);
+		border-radius: 12px;
+	}
+
+	.actions-column h4 {
+		margin: 0 0 8px 0;
+		font-size: 13px;
+		text-transform: uppercase;
+		letter-spacing: 0.6px;
+		color: #cbd5f5;
+	}
+
+	.action-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.action-chip {
+		padding: 8px 12px;
+		border-radius: 9999px;
+		background: rgba(59, 130, 246, 0.2);
+		border: 1px solid rgba(59, 130, 246, 0.4);
+		font-size: 12px;
+		color: #bfdbfe;
+		width: fit-content;
+	}
+
+	.action-chip + .action-chip {
+		margin-top: 2px;
+	}
+
+	.action-chip.muted,
+	.action-empty {
+		background: rgba(100, 116, 139, 0.2);
+		border-color: rgba(100, 116, 139, 0.3);
+		color: #cbd5f5;
+		font-style: italic;
+	}
+
+	.action-empty {
+		margin: 0;
+		font-size: 12px;
 	}
 
 	.crisis-action, .war-room-action, .strategic-action {
@@ -1289,7 +1504,9 @@
 	.day-controls {
 		display: flex;
 		align-items: center;
+		justify-content: space-between;
 		gap: 20px;
+		flex-wrap: wrap;
 	}
 
 	.day-status {
@@ -1350,6 +1567,10 @@
 
 		.vital-metrics {
 			gap: 20px;
+		}
+
+		.special-actions-panel {
+			grid-template-columns: 1fr;
 		}
 
 		.command-center {

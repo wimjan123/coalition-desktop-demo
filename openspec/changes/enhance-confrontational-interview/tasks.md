@@ -8,39 +8,39 @@
 - [x] 1.5 Add interview state tracking to game store
 
 ## 2. Scenario Selection Component
-- [ ] 2.1 Create `ScenarioSelection.svelte` component
-- [ ] 2.2 Design scenario cards with risk/reward display
-- [ ] 2.3 Add scenario selection as Step 0 in character creation flow
-- [ ] 2.4 Implement scenario-aware styling and descriptions
-- [ ] 2.5 Add difficulty warning system for extreme combinations
+- [x] 2.1 Create `ScenarioSelection.svelte` component
+- [x] 2.2 Design scenario cards with risk/reward display
+- [x] 2.3 Add scenario selection as Step 0 in character creation flow
+- [x] 2.4 Implement scenario-aware styling and descriptions
+- [x] 2.5 Add difficulty warning system for extreme combinations
 
 ## 3. Enhanced Background Selection
-- [ ] 3.1 Add controversial backgrounds to background selection UI
-- [ ] 3.2 Implement risk/reward display for each background
-- [ ] 3.3 Add background-specific gameplay modifier tooltips
-- [ ] 3.4 Create confirmation dialog for high-risk backgrounds
-- [ ] 3.5 Update background selection validation logic
+- [x] 3.1 Add controversial backgrounds to background selection UI
+- [x] 3.2 Implement risk/reward display for each background
+- [x] 3.3 Add background-specific gameplay modifier tooltips
+- [x] 3.4 Create confirmation dialog for high-risk backgrounds
+- [x] 3.5 Update background selection validation logic
 
 ## 4. Adaptive Interview Engine
-- [ ] 4.1 Rewrite `MediaInterview.svelte` with branching question system
-- [ ] 4.2 Implement interviewer personality system (hostile/skeptical/professional)
-- [ ] 4.3 Create question database with conditional triggers
-- [ ] 4.4 Add response tone detection and tracking
-- [ ] 4.5 Implement consistency checking across responses
+- [x] 4.1 Rewrite `MediaInterview.svelte` with branching question system
+- [x] 4.2 Implement interviewer personality system (hostile/skeptical/professional)
+- [x] 4.3 Create question database with conditional triggers
+- [x] 4.4 Add response tone detection and tracking
+- [x] 4.5 Implement consistency checking across responses
 
 ## 5. Confrontational Question Content
-- [ ] 5.1 Write 15 base confrontational questions covering all political issues
-- [ ] 5.2 Create 20 background-specific challenge questions
-- [ ] 5.3 Write 10 scenario-specific probing questions
-- [ ] 5.4 Implement contradiction detection and follow-up questions
-- [ ] 5.5 Add aggressive response options for each question type
+- [x] 5.1 Write 15 base confrontational questions covering all political issues
+- [x] 5.2 Create 20 background-specific challenge questions
+- [x] 5.3 Write 10 scenario-specific probing questions
+- [x] 5.4 Implement contradiction detection and follow-up questions
+- [x] 5.5 Add aggressive response options for each question type
 
 ## 6. Response System Enhancement
-- [ ] 6.1 Create response option templates (aggressive, defensive, deflection, direct)
-- [ ] 6.2 Implement response tone scoring system
-- [ ] 6.3 Add visual feedback for response tone choices
-- [ ] 6.4 Create interview performance calculator
-- [ ] 6.5 Add consequence preview system for response choices
+- [x] 6.1 Create response option templates (aggressive, defensive, deflection, direct)
+- [x] 6.2 Implement response tone scoring system
+- [x] 6.3 Add visual feedback for response tone choices
+- [x] 6.4 Create interview performance calculator
+- [x] 6.5 Add consequence preview system for response choices
 
 ## 7. Game Integration
 - [ ] 7.1 Connect starting scenario to initial game state modifiers

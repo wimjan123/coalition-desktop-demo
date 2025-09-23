@@ -459,7 +459,11 @@
 				<h2>Live Political Interview</h2>
 				<p class="instruction">Your responses will establish your party's political platform</p>
 
-				<MediaInterview on:complete={handleInterviewComplete} />
+				<MediaInterview
+					selectedScenario={selectedScenario}
+					selectedBackground={selectedBackground}
+					on:complete={handleInterviewComplete}
+				/>
 			</div>
 		{/if}
 	</div>

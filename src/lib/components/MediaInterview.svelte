@@ -219,6 +219,11 @@
 					text: "Easy to judge from the outside. Governing means making difficult compromises.",
 					tone: 'evasive',
 					triggers: ['compromise-follow-up']
+				},
+				{
+					text: "At least I had the courage to serve when it mattered. Where were you when tough decisions needed to be made?",
+					tone: 'aggressive',
+					triggers: ['service-courage-follow-up']
 				}
 			]
 		},
@@ -466,22 +471,37 @@
 				{
 					text: "Support deeper European integration. Shared challenges require shared solutions and coordinated policies.",
 					position: -75,
-					priority: 4
+					priority: 4,
+					tone: 'diplomatic',
+					triggers: ['eu-follow-up-integration']
 				},
 				{
 					text: "Engage constructively while protecting key Dutch interests and maintaining some fiscal autonomy.",
 					position: -20,
-					priority: 3
+					priority: 3,
+					tone: 'diplomatic',
+					triggers: ['eu-follow-up-balanced']
 				},
 				{
 					text: "Resist fiscal integration that undermines Dutch sovereignty while remaining committed to European cooperation.",
 					position: 40,
-					priority: 4
+					priority: 4,
+					tone: 'defensive',
+					triggers: ['eu-follow-up-resistance']
 				},
 				{
 					text: "Defend Dutch sovereignty strongly and consider reducing EU integration if our interests are not protected.",
 					position: 80,
-					priority: 5
+					priority: 5,
+					tone: 'confrontational',
+					triggers: ['eu-follow-up-sovereignty']
+				},
+				{
+					text: "Brussels can take their fiscal rules and shove them. The Netherlands will set its own tax policy, period.",
+					position: 85,
+					priority: 5,
+					tone: 'aggressive',
+					triggers: ['eu-follow-up-hostile']
 				}
 			]
 		},
@@ -494,22 +514,37 @@
 				{
 					text: "Implement wealth taxes, raise top income tax rates, and expand social programs to redistribute wealth more fairly.",
 					position: -80,
-					priority: 5
+					priority: 5,
+					tone: 'confrontational',
+					triggers: ['inequality-follow-up-redistribution']
 				},
 				{
 					text: "Focus on education, job training, and moderate tax adjustments to create more opportunities for advancement.",
 					position: -25,
-					priority: 4
+					priority: 4,
+					tone: 'diplomatic',
+					triggers: ['inequality-follow-up-opportunity']
 				},
 				{
 					text: "Encourage entrepreneurship and economic growth that benefits everyone rather than redistributive policies.",
 					position: 30,
-					priority: 3
+					priority: 3,
+					tone: 'defensive',
+					triggers: ['inequality-follow-up-growth']
 				},
 				{
 					text: "Reduce taxes and regulations to stimulate job creation and economic mobility through market mechanisms.",
 					position: 75,
-					priority: 2
+					priority: 2,
+					tone: 'confrontational',
+					triggers: ['inequality-follow-up-market']
+				},
+				{
+					text: "Inequality is natural. Successful people deserve their wealth - jealousy won't solve anything.",
+					position: 80,
+					priority: 3,
+					tone: 'aggressive',
+					triggers: ['inequality-follow-up-meritocracy']
 				}
 			]
 		},
@@ -547,6 +582,537 @@
 					priority: 2,
 					tone: 'aggressive',
 					triggers: ['education-follow-up-private']
+				}
+			]
+		},
+
+		// ===== NEW BACKGROUND-SPECIFIC CHALLENGE QUESTIONS (Task 5.2) =====
+		// Gotcha questions targeting controversial backgrounds with Dutch political context
+
+		// Toeslagenaffaire Whistleblower - Second Challenge
+		{
+			id: 'toeslagenaffaire-consequences',
+			type: 'background-challenge',
+			conditions: {
+				background: ['toeslagenaffaire-whistleblower']
+			},
+			scenario: "Your whistleblowing led to the fall of Rutte III, cost taxpayers billions in compensation, and destroyed careers of civil servants.",
+			question: "Your actions collapsed the government and cost billions. Some families still haven't been compensated while lawyers got rich. Was destroying the system worth it?",
+			options: [
+				{
+					text: "The system destroyed itself through racism. I just exposed what politicians wanted hidden.",
+					tone: 'confrontational',
+					triggers: ['systematic-racism-follow-up']
+				},
+				{
+					text: "Those billions should have been paid decades ago. The delay is on politicians, not me.",
+					tone: 'aggressive',
+					triggers: ['political-blame-follow-up']
+				},
+				{
+					text: "I regret the chaos, but systematic injustice required drastic action to fix.",
+					tone: 'defensive',
+					triggers: ['necessary-chaos-follow-up']
+				},
+				{
+					text: "Every euro spent on compensation was already owed. The real cost was doing nothing.",
+					tone: 'diplomatic',
+					triggers: ['moral-cost-follow-up']
+				}
+			]
+		},
+
+		// Shell Executive - Second Challenge
+		{
+			id: 'shell-climate-lawsuits',
+			type: 'background-challenge',
+			conditions: {
+				background: ['shell-executive']
+			},
+			scenario: "During your tenure, Shell lost the landmark climate case and was ordered to cut emissions by 45%. The company spent millions fighting climate science while you knew the truth.",
+			question: "You personally signed off on climate denial campaigns while Shell's own scientists confirmed global warming. How do you sleep at night?",
+			options: [
+				{
+					text: "I followed company policy and legal advice. Personal responsibility lies with the board and shareholders.",
+					tone: 'evasive',
+					triggers: ['responsibility-deflection-follow-up']
+				},
+				{
+					text: "The transition had to be managed responsibly to protect Dutch jobs and energy security.",
+					tone: 'defensive',
+					triggers: ['jobs-vs-climate-follow-up']
+				},
+				{
+					text: "I was wrong, and I'm now dedicating my political career to fighting the damage I helped cause.",
+					tone: 'diplomatic',
+					triggers: ['redemption-path-follow-up']
+				},
+				{
+					text: "Easy to judge from the sidelines. Try making energy decisions for 17 million people.",
+					tone: 'aggressive',
+					triggers: ['leadership-burden-follow-up']
+				}
+			]
+		},
+
+		// BBB Defector - Second Challenge
+		{
+			id: 'bbb-betrayal-profits',
+			type: 'background-challenge',
+			conditions: {
+				background: ['bbb-defector']
+			},
+			scenario: "You used BBB resources, farmer donations, and activist networks to build your profile, then abandoned them when mainstream politics offered better opportunities.",
+			question: "Farmers scraped together donations to fund your political career, and you used their trust to climb to power. That's not defection, that's fraud, isn't it?",
+			options: [
+				{
+					text: "I repaid every cent the BBB invested in me when I left. My conscience is clear.",
+					tone: 'defensive',
+					triggers: ['financial-ethics-follow-up']
+				},
+				{
+					text: "BBB became too radical and anti-democratic. I stayed true to farmers' real interests.",
+					tone: 'confrontational',
+					triggers: ['radicalization-claim-follow-up']
+				},
+				{
+					text: "Those farmers deserve representation in Parliament, not just protest movements. I'm fighting for them here.",
+					tone: 'diplomatic',
+					triggers: ['institutional-representation-follow-up']
+				},
+				{
+					text: "Politics is about building coalitions, not staying in ideological bubbles. Farmers need allies.",
+					tone: 'aggressive',
+					triggers: ['coalition-building-follow-up']
+				}
+			]
+		},
+
+		// Activist Background - First Challenge
+		{
+			id: 'activist-extremist-past',
+			type: 'background-challenge',
+			conditions: {
+				background: ['activist-background']
+			},
+			scenario: "Your environmental activism included blocking highways, disrupting parliament, and occupying Shell headquarters. Police arrested you 12 times for public disorder.",
+			question: "You broke the law repeatedly as an activist, disrupted democracy, and blocked working people from getting to their jobs. Why should law-abiding citizens trust you?",
+			options: [
+				{
+					text: "Civil disobedience is necessary when democratic institutions fail to address existential threats.",
+					tone: 'confrontational',
+					triggers: ['civil-disobedience-follow-up']
+				},
+				{
+					text: "I never used violence and always accepted legal consequences. That's principled activism.",
+					tone: 'diplomatic',
+					triggers: ['peaceful-resistance-follow-up']
+				},
+				{
+					text: "Those arrests were badges of honor. Sometimes democracy needs to be disrupted to save it.",
+					tone: 'aggressive',
+					triggers: ['disruptive-democracy-follow-up']
+				},
+				{
+					text: "I understand concerns about my methods, but the climate crisis justified extraordinary action.",
+					tone: 'defensive',
+					triggers: ['climate-justification-follow-up']
+				}
+			]
+		},
+
+		// Activist Background - Second Challenge
+		{
+			id: 'activist-corporate-hypocrisy',
+			type: 'background-challenge',
+			conditions: {
+				background: ['activist-background']
+			},
+			scenario: "Despite your anti-corporate activism, you now accept donations from green energy companies and drive a Tesla while ordinary families can't afford electric cars.",
+			question: "You've gone from fighting corporations to being funded by them. Green capitalism is still capitalism - aren't you just another sellout?",
+			options: [
+				{
+					text: "Working within the system is how you change it. Pure ideology helps no one.",
+					tone: 'diplomatic',
+					triggers: ['pragmatic-change-follow-up']
+				},
+				{
+					text: "Green companies are allies in the climate fight. Rejecting help would be stupid.",
+					tone: 'aggressive',
+					triggers: ['strategic-alliances-follow-up']
+				},
+				{
+					text: "My positions haven't changed, just my methods. The climate needs political solutions now.",
+					tone: 'defensive',
+					triggers: ['evolving-tactics-follow-up']
+				},
+				{
+					text: "Show me a politician who's never compromised, and I'll show you someone who's never accomplished anything.",
+					tone: 'confrontational',
+					triggers: ['political-realism-follow-up']
+				}
+			]
+		},
+
+		// Business Leader - First Challenge
+		{
+			id: 'business-wealth-inequality',
+			type: 'background-challenge',
+			conditions: {
+				background: ['business-leader']
+			},
+			scenario: "As CEO, you earned 200 times the median worker's salary while cutting jobs and moving production to cheaper countries. Your company avoided taxes through Dutch letterbox structures.",
+			question: "You got rich by exploiting Dutch tax loopholes and destroying Dutch jobs. How can you claim to represent working families?",
+			options: [
+				{
+					text: "I created shareholder value and jobs globally. That's what good CEOs do for competitiveness.",
+					tone: 'aggressive',
+					triggers: ['shareholder-primacy-follow-up']
+				},
+				{
+					text: "Those decisions were necessary for survival in global markets. The alternative was company bankruptcy.",
+					tone: 'defensive',
+					triggers: ['market-necessity-follow-up']
+				},
+				{
+					text: "I've seen how business decisions affect real families. That experience will guide my politics.",
+					tone: 'diplomatic',
+					triggers: ['business-experience-follow-up']
+				},
+				{
+					text: "The tax system forced those choices. I want to fix the system that created those perverse incentives.",
+					tone: 'confrontational',
+					triggers: ['system-reform-follow-up']
+				}
+			]
+		},
+
+		// Business Leader - Second Challenge
+		{
+			id: 'business-covid-profits',
+			type: 'background-challenge',
+			conditions: {
+				background: ['business-leader']
+			},
+			scenario: "During COVID, your company took millions in government support while paying out dividends and bonuses. Small businesses went bankrupt while you profited from public money.",
+			question: "You took taxpayer money meant to save jobs, then paid it out to shareholders and executives. That's stealing from Dutch families during a crisis, isn't it?",
+			options: [
+				{
+					text: "We followed government rules and saved jobs. Dividend payments came from other sources.",
+					tone: 'defensive',
+					triggers: ['rule-following-follow-up']
+				},
+				{
+					text: "Companies that survived created more jobs than companies that died. Support worked as intended.",
+					tone: 'aggressive',
+					triggers: ['survival-benefit-follow-up']
+				},
+				{
+					text: "Those programs were poorly designed by politicians. We operated within legal parameters.",
+					tone: 'evasive',
+					triggers: ['political-blame-follow-up']
+				},
+				{
+					text: "I regret those decisions and support stricter conditions on future business support programs.",
+					tone: 'diplomatic',
+					triggers: ['policy-improvement-follow-up']
+				}
+			]
+		},
+
+		// Academic/Expert - First Challenge
+		{
+			id: 'academic-ivory-tower',
+			type: 'background-challenge',
+			conditions: {
+				background: ['academic-expert']
+			},
+			scenario: "You spent decades in universities earning a professor's salary while Dutch families struggled with real problems. Your research was funded by EU grants that Dutch taxpayers pay for.",
+			question: "You've lived in an academic bubble, funded by taxpayers, writing papers nobody reads. What do you know about real life in the Netherlands?",
+			options: [
+				{
+					text: "Academic research informs evidence-based policy. That's exactly what Dutch politics needs more of.",
+					tone: 'confrontational',
+					triggers: ['evidence-based-policy-follow-up']
+				},
+				{
+					text: "I studied Dutch society systematically. That's more insight than most politicians' anecdotes provide.",
+					tone: 'aggressive',
+					triggers: ['systematic-knowledge-follow-up']
+				},
+				{
+					text: "Universities serve society by developing knowledge. That research helps solve real problems.",
+					tone: 'diplomatic',
+					triggers: ['university-purpose-follow-up']
+				},
+				{
+					text: "I've also worked in business and consulted for government. My experience isn't purely academic.",
+					tone: 'defensive',
+					triggers: ['diverse-experience-follow-up']
+				}
+			]
+		},
+
+		// Academic/Expert - Second Challenge
+		{
+			id: 'academic-expert-wrong',
+			type: 'background-challenge',
+			conditions: {
+				background: ['academic-expert']
+			},
+			scenario: "Your economic models predicted the eurozone would strengthen Dutch competitiveness, but it led to austerity and slower growth. Your climate models underestimated the speed of change.",
+			question: "Your expert predictions were wrong about the euro, wrong about climate timing, wrong about COVID spread. Why should voters trust experts who keep getting it wrong?",
+			options: [
+				{
+					text: "Science evolves as we learn more. That's intellectual honesty, not failure.",
+					tone: 'diplomatic',
+					triggers: ['scientific-evolution-follow-up']
+				},
+				{
+					text: "My predictions were based on best available data. Politicians ignored uncertainty ranges in my analysis.",
+					tone: 'defensive',
+					triggers: ['data-limitations-follow-up']
+				},
+				{
+					text: "Better imperfect analysis than political gut feelings. At least I show my working.",
+					tone: 'aggressive',
+					triggers: ['analysis-vs-intuition-follow-up']
+				},
+				{
+					text: "Experts aren't fortune tellers. We provide tools for decision-making under uncertainty.",
+					tone: 'confrontational',
+					triggers: ['uncertainty-management-follow-up']
+				}
+			]
+		},
+
+		// Former Civil Servant - First Challenge
+		{
+			id: 'civil-servant-system-failure',
+			type: 'background-challenge',
+			conditions: {
+				background: ['civil-servant']
+			},
+			scenario: "As a senior civil servant, you implemented the policies that created the toeslagenaffaire, housing crisis, and nitrogen deadlock. You were part of the system that failed Dutch families.",
+			question: "You spent your career implementing failed policies that hurt ordinary Dutch people. How are you the solution when you were part of the problem?",
+			options: [
+				{
+					text: "I saw the system's flaws from inside and know exactly how to fix them.",
+					tone: 'confrontational',
+					triggers: ['insider-knowledge-follow-up']
+				},
+				{
+					text: "Civil servants implement political decisions. The failures were political, not administrative.",
+					tone: 'defensive',
+					triggers: ['political-vs-administrative-follow-up']
+				},
+				{
+					text: "I tried to reform the system from within. Political change requires different tools.",
+					tone: 'diplomatic',
+					triggers: ['internal-reform-limits-follow-up']
+				},
+				{
+					text: "I followed orders and professional ethics. Blaming civil servants misses the real problems.",
+					tone: 'aggressive',
+					triggers: ['professional-duty-follow-up']
+				}
+			]
+		},
+
+		// Former Civil Servant - Second Challenge
+		{
+			id: 'civil-servant-bureaucratic-elite',
+			type: 'background-challenge',
+			conditions: {
+				background: ['civil-servant']
+			},
+			scenario: "You epitomize the bureaucratic elite that ordinary Dutch people distrust. Safe government job, good pension, making rules for people whose lives you don't understand.",
+			question: "You're the embodiment of everything wrong with Dutch bureaucracy - comfortable elites making rules for people you've never met. Why should anyone vote for more bureaucracy?",
+			options: [
+				{
+					text: "Government exists to serve citizens. I understand that mission from 20 years of public service.",
+					tone: 'diplomatic',
+					triggers: ['public-service-mission-follow-up']
+				},
+				{
+					text: "I know where the bodies are buried in Dutch bureaucracy. That's exactly what we need to clean it up.",
+					tone: 'aggressive',
+					triggers: ['bureaucracy-reform-follow-up']
+				},
+				{
+					text: "Civil servants work with citizens daily on housing, benefits, permits. I understand their needs directly.",
+					tone: 'defensive',
+					triggers: ['citizen-interaction-follow-up']
+				},
+				{
+					text: "Less bureaucracy sounds good until your house floods or food poisoning kills your child. Government matters.",
+					tone: 'confrontational',
+					triggers: ['government-necessity-follow-up']
+				}
+			]
+		},
+
+		// Media Background - Second Challenge
+		{
+			id: 'media-bias-agenda',
+			type: 'background-challenge',
+			conditions: {
+				background: ['media-background']
+			},
+			scenario: "As a journalist, you promoted immigration, climate activism, and EU integration. Your reporting shaped public opinion while claiming objectivity.",
+			question: "You spent years pushing a left-wing agenda while pretending to be objective. Now you want to drop the pretense and push that agenda directly. At least you're honest about your bias now?",
+			options: [
+				{
+					text: "Good journalism requires advocating for truth and human rights. That's not bias, that's ethics.",
+					tone: 'confrontational',
+					triggers: ['journalistic-ethics-follow-up']
+				},
+				{
+					text: "I reported facts. If facts have a liberal bias, that says more about conservative positions than journalism.",
+					tone: 'aggressive',
+					triggers: ['facts-vs-bias-follow-up']
+				},
+				{
+					text: "Every journalist has perspectives. The difference is being transparent about them in politics.",
+					tone: 'diplomatic',
+					triggers: ['transparent-bias-follow-up']
+				},
+				{
+					text: "I covered all sides fairly. My personal views developed from what I witnessed reporting.",
+					tone: 'defensive',
+					triggers: ['fair-coverage-follow-up']
+				}
+			]
+		},
+
+		// Healthcare Worker - First Challenge
+		{
+			id: 'healthcare-covid-authority',
+			type: 'background-challenge',
+			conditions: {
+				background: ['healthcare-worker']
+			},
+			scenario: "During COVID, healthcare workers demanded lockdowns that destroyed businesses and children's education. You prioritized hospital capacity over broader social costs.",
+			question: "You pushed for lockdowns that ruined businesses and traumatized children to protect hospital capacity. Why should your medical opinion override everyone else's welfare?",
+			options: [
+				{
+					text: "We prevented healthcare collapse and saved lives. That was our professional duty.",
+					tone: 'defensive',
+					triggers: ['medical-duty-follow-up']
+				},
+				{
+					text: "I witnessed preventable deaths daily. Anyone criticizing our advice should have worked COVID wards.",
+					tone: 'aggressive',
+					triggers: ['frontline-experience-follow-up']
+				},
+				{
+					text: "Public health requires balancing many factors. Medical expertise is one input, not the only one.",
+					tone: 'diplomatic',
+					triggers: ['balanced-expertise-follow-up']
+				},
+				{
+					text: "Dead people don't have jobs or education. Keeping people alive was the prerequisite for everything else.",
+					tone: 'confrontational',
+					triggers: ['life-first-principle-follow-up']
+				}
+			]
+		},
+
+		// Healthcare Worker - Second Challenge
+		{
+			id: 'healthcare-system-profits',
+			type: 'background-challenge',
+			conditions: {
+				background: ['healthcare-worker']
+			},
+			scenario: "Healthcare workers earn good salaries and have strong unions while demanding more money from taxpayers. Meanwhile, patients wait months for care and small businesses struggle with health insurance costs.",
+			question: "You earn more than most Dutch workers and have better job security, but constantly demand more taxpayer money. Why should struggling families pay even more for your comfortable lifestyle?",
+			options: [
+				{
+					text: "Healthcare workers earn every euro dealing with life and death decisions. Our salaries reflect that responsibility.",
+					tone: 'aggressive',
+					triggers: ['professional-value-follow-up']
+				},
+				{
+					text: "Underfunding healthcare hurts patients more than workers. We advocate for better care, not just better pay.",
+					tone: 'diplomatic',
+					triggers: ['patient-advocacy-follow-up']
+				},
+				{
+					text: "Good healthcare requires skilled professionals. If you want quality care, you need to pay for it.",
+					tone: 'confrontational',
+					triggers: ['quality-payment-follow-up']
+				},
+				{
+					text: "Many healthcare workers leave for better conditions abroad. Competitive compensation keeps talent in the Netherlands.",
+					tone: 'defensive',
+					triggers: ['talent-retention-follow-up']
+				}
+			]
+		},
+
+		// Military/Police - First Challenge
+		{
+			id: 'military-police-violence',
+			type: 'background-challenge',
+			conditions: {
+				background: ['military-police']
+			},
+			scenario: "Police brutality against minorities, military failures in Afghanistan, and institutional racism in security forces define your professional background.",
+			question: "Your career was built on institutions that systematically discriminate against minorities and use violence against citizens. How can you represent everyone when you enforced an unjust system?",
+			options: [
+				{
+					text: "I witnessed these problems firsthand and fought to reform them from within. That's why I'm here.",
+					tone: 'diplomatic',
+					triggers: ['internal-reform-follow-up']
+				},
+				{
+					text: "The vast majority of security work protects all citizens. A few bad cases don't define the profession.",
+					tone: 'defensive',
+					triggers: ['professional-defense-follow-up']
+				},
+				{
+					text: "Society needs security services. The question is making them accountable, not eliminating them.",
+					tone: 'confrontational',
+					triggers: ['necessary-security-follow-up']
+				},
+				{
+					text: "I served with honor under difficult circumstances. Armchair critics don't understand operational realities.",
+					tone: 'aggressive',
+					triggers: ['operational-reality-follow-up']
+				}
+			]
+		},
+
+		// Military/Police - Second Challenge
+		{
+			id: 'military-police-authoritarian',
+			type: 'background-challenge',
+			conditions: {
+				background: ['military-police']
+			},
+			scenario: "Your security background represents authoritarian thinking - following orders, enforcing rules, using force against civilians. These aren't democratic values.",
+			question: "You spent your career in hierarchical institutions that suppress individual freedom and democratic dissent. Aren't you exactly the wrong person to represent democratic values?",
+			options: [
+				{
+					text: "Military and police service teaches the value of democratic institutions by protecting them.",
+					tone: 'diplomatic',
+					triggers: ['democratic-protection-follow-up']
+				},
+				{
+					text: "Someone has to be willing to defend democracy when it's threatened. That requires understanding force.",
+					tone: 'confrontational',
+					triggers: ['democratic-defense-follow-up']
+				},
+				{
+					text: "Security services operate under civilian control and constitutional law. That's democracy in action.",
+					tone: 'defensive',
+					triggers: ['civilian-control-follow-up']
+				},
+				{
+					text: "Easy to criticize order and authority until chaos threatens your family's safety.",
+					tone: 'aggressive',
+					triggers: ['order-necessity-follow-up']
 				}
 			]
 		},
@@ -1122,8 +1688,783 @@
 					triggers: ['digital-follow-up-safety']
 				}
 			]
+		},
+
+		// ===== SCENARIO-SPECIFIC PROBING QUESTIONS (Task 5.3) =====
+		// Questions that probe specific starting scenarios
+
+		// New Party Founder - Challenge about inexperience
+		{
+			id: 'new-party-inexperience',
+			type: 'opening',
+			conditions: {
+				scenario: ['new-party']
+			},
+			scenario: "You're starting completely fresh with no political experience, no established network, and no proven track record in government.",
+			question: "Why should Dutch voters trust someone with zero political experience when the country faces complex crises requiring experienced leadership?",
+			options: [
+				{
+					text: "Fresh perspective is exactly what Dutch politics needs. Experienced politicians created these problems.",
+					tone: 'confrontational',
+					triggers: ['outsider-follow-up']
+				},
+				{
+					text: "I bring expertise from other sectors and will surround myself with experienced advisors.",
+					tone: 'diplomatic',
+					triggers: ['expertise-follow-up']
+				},
+				{
+					text: "The established parties have had decades to solve these problems and failed. Time for new approaches.",
+					tone: 'aggressive',
+					triggers: ['failure-follow-up']
+				},
+				{
+					text: "Everyone starts somewhere. What matters is having the right vision and values for the Netherlands.",
+					tone: 'defensive',
+					triggers: ['vision-follow-up']
+				}
+			]
+		},
+
+		// Party Rehabilitator - Challenge about toxic legacy
+		{
+			id: 'party-rehabilitator-toxic',
+			type: 'background-challenge',
+			conditions: {
+				scenario: ['party-rehabilitator']
+			},
+			scenario: "You're trying to rehabilitate a party with a toxic reputation - scandals, extremism, or corruption that voters remember clearly.",
+			question: "How can you ask voters to trust a party that betrayed their faith before? Isn't this just putting new paint on a rotten foundation?",
+			options: [
+				{
+					text: "We've completely cleaned house. Every person responsible for past failures is gone.",
+					tone: 'confrontational',
+					triggers: ['clean-house-follow-up']
+				},
+				{
+					text: "The party's values remain sound. It was specific leaders who failed, not our fundamental principles.",
+					tone: 'defensive',
+					triggers: ['values-follow-up']
+				},
+				{
+					text: "Past mistakes make us stronger. We learned from failure and built better systems to prevent it.",
+					tone: 'diplomatic',
+					triggers: ['learning-follow-up']
+				},
+				{
+					text: "Every voter deserves representation. Writing off entire parties eliminates democratic choice.",
+					tone: 'evasive',
+					triggers: ['democracy-follow-up']
+				}
+			]
+		},
+
+		// Scandal Survivor - Personal redemption challenge
+		{
+			id: 'scandal-survivor-redemption',
+			type: 'background-challenge',
+			conditions: {
+				scenario: ['scandal-survivor']
+			},
+			scenario: "You're attempting a political comeback after your career was derailed by scandal - whether personal misconduct, corruption, or policy disaster.",
+			question: "You had your chance and blew it spectacularly. Why should voters give you a second chance when so many qualified people never get a first one?",
+			options: [
+				{
+					text: "I paid the price for my mistakes and learned from them. That experience makes me a better leader.",
+					tone: 'diplomatic',
+					triggers: ['redemption-follow-up']
+				},
+				{
+					text: "The scandal was overblown by media and political opponents who wanted me gone.",
+					tone: 'defensive',
+					triggers: ['persecution-follow-up']
+				},
+				{
+					text: "Democracy means voters decide, not journalists. If they want me back, I'll serve.",
+					tone: 'confrontational',
+					triggers: ['democracy-choice-follow-up']
+				},
+				{
+					text: "I have unique experience dealing with crisis and accountability that current leaders lack.",
+					tone: 'aggressive',
+					triggers: ['unique-experience-follow-up']
+				}
+			]
+		},
+
+		// Emergency Replacement - Crisis leadership challenge
+		{
+			id: 'emergency-replacement-crisis',
+			type: 'opening',
+			conditions: {
+				scenario: ['emergency-replacement']
+			},
+			scenario: "You've been thrust into leadership after the previous leader resigned in scandal, leaving the party in chaos during a national crisis.",
+			question: "You're essentially cleaning up someone else's mess while trying to lead during crisis. How can you provide stability when your own position is inherently unstable?",
+			options: [
+				{
+					text: "Crisis demands decisive action, not endless debate. I'll focus on solutions, not politics.",
+					tone: 'confrontational',
+					triggers: ['crisis-action-follow-up']
+				},
+				{
+					text: "The party chose me because I have the experience and judgment to handle both challenges.",
+					tone: 'diplomatic',
+					triggers: ['capability-follow-up']
+				},
+				{
+					text: "Sometimes stability comes from admitting problems and fixing them, not pretending everything is fine.",
+					tone: 'aggressive',
+					triggers: ['honesty-follow-up']
+				},
+				{
+					text: "I didn't create this situation, but I'm committed to resolving it responsibly.",
+					tone: 'defensive',
+					triggers: ['responsibility-follow-up']
+				}
+			]
+		},
+
+		// Coalition Defector - Betrayal challenge
+		{
+			id: 'coalition-defector-betrayal',
+			type: 'background-challenge',
+			conditions: {
+				scenario: ['coalition-defector']
+			},
+			scenario: "You abandoned a coalition government, potentially destabilizing Dutch governance during critical policy implementation.",
+			question: "You broke your commitment to coalition partners and voters who supported that government. If you'll betray them, why wouldn't you betray new supporters?",
+			options: [
+				{
+					text: "I left because they betrayed the principles we promised voters. I stayed loyal to the program.",
+					tone: 'confrontational',
+					triggers: ['principle-loyalty-follow-up']
+				},
+				{
+					text: "Sometimes difficult decisions require personal sacrifice for the greater good of the country.",
+					tone: 'diplomatic',
+					triggers: ['greater-good-follow-up']
+				},
+				{
+					text: "Coalition partners ignored my warnings about disastrous policies. I refused to be complicit.",
+					tone: 'aggressive',
+					triggers: ['warning-ignored-follow-up']
+				},
+				{
+					text: "Political circumstances changed dramatically. Rigid adherence to old agreements would have harmed the Netherlands.",
+					tone: 'evasive',
+					triggers: ['circumstances-changed-follow-up']
+				}
+			]
+		},
+
+		// Hostile Takeover - Internal warfare challenge
+		{
+			id: 'hostile-takeover-warfare',
+			type: 'background-challenge',
+			conditions: {
+				scenario: ['hostile-takeover']
+			},
+			scenario: "You fought a brutal internal war to seize control of your own party, creating divisions and destroying longtime relationships.",
+			question: "You tore your own party apart to gain power. If you can't unite your own people, how can you unite the country?",
+			options: [
+				{
+					text: "Sometimes you have to break things to fix them. The party was failing under weak leadership.",
+					tone: 'aggressive',
+					triggers: ['break-to-fix-follow-up']
+				},
+				{
+					text: "Internal democracy is healthy. Members chose change through legitimate party processes.",
+					tone: 'diplomatic',
+					triggers: ['democratic-process-follow-up']
+				},
+				{
+					text: "The old guard was leading us to electoral disaster. I saved the party from irrelevance.",
+					tone: 'confrontational',
+					triggers: ['salvation-follow-up']
+				},
+				{
+					text: "Politics requires difficult choices. Unity without direction is just comfortable failure.",
+					tone: 'defensive',
+					triggers: ['difficult-choices-follow-up']
+				}
+			]
+		},
+
+		// Multi-scenario: Electoral viability challenge
+		{
+			id: 'scenario-electoral-math',
+			type: 'follow-up',
+			conditions: {
+				scenario: ['party-rehabilitator', 'scandal-survivor', 'hostile-takeover']
+			},
+			scenario: "Polling shows your starting position makes electoral success extremely difficult, potentially wasting voters' time and energy.",
+			question: "Honest question: Given your starting disadvantages, aren't you just wasting resources that could support viable candidates with better chances?",
+			options: [
+				{
+					text: "Campaigns aren't decided by starting polls. Voters deserve real choice, not predetermined outcomes.",
+					tone: 'confrontational',
+					triggers: ['voter-choice-follow-up']
+				},
+				{
+					text: "Long-term change requires someone willing to start difficult conversations, even from behind.",
+					tone: 'diplomatic',
+					triggers: ['long-term-follow-up']
+				},
+				{
+					text: "I've been counted out before and proven the experts wrong. Dutch voters are smarter than pollsters think.",
+					tone: 'aggressive',
+					triggers: ['underdog-follow-up']
+				},
+				{
+					text: "Democracy works best when voters have genuine alternatives, not just safe establishment choices.",
+					tone: 'evasive',
+					triggers: ['alternatives-follow-up']
+				}
+			]
+		},
+
+		// Multi-scenario: Coalition potential challenge
+		{
+			id: 'scenario-coalition-poison',
+			type: 'follow-up',
+			conditions: {
+				scenario: ['party-rehabilitator', 'scandal-survivor', 'coalition-defector', 'hostile-takeover']
+			},
+			scenario: "Other parties have already indicated they won't work with you in coalition, potentially making your party irrelevant even if elected.",
+			question: "If established parties won't work with you, aren't you condemning your supporters to permanent opposition and irrelevance?",
+			options: [
+				{
+					text: "Their refusal to work with us proves they're more interested in protecting their club than serving voters.",
+					tone: 'aggressive',
+					triggers: ['establishment-club-follow-up']
+				},
+				{
+					text: "Electoral success changes everything. They'll negotiate if voters give us enough seats to be necessary.",
+					tone: 'confrontational',
+					triggers: ['electoral-necessity-follow-up']
+				},
+				{
+					text: "Opposition can be effective too. Not every contribution requires being in government.",
+					tone: 'defensive',
+					triggers: ['opposition-value-follow-up']
+				},
+				{
+					text: "Politics is pragmatic. They're saying that now, but positions change when power is at stake.",
+					tone: 'diplomatic',
+					triggers: ['pragmatic-politics-follow-up']
+				}
+			]
+		},
+
+		// Multi-scenario: Media scrutiny challenge
+		{
+			id: 'scenario-media-target',
+			type: 'follow-up',
+			conditions: {
+				scenario: ['party-rehabilitator', 'scandal-survivor', 'coalition-defector', 'hostile-takeover']
+			},
+			scenario: "Your controversial background means every mistake will be magnified, every statement scrutinized, every ally questioned by hostile media.",
+			question: "You're starting with a target on your back. How can you govern effectively when every decision will face maximum media hostility?",
+			options: [
+				{
+					text: "Media hostility might actually help by showing voters I'm fighting their establishment.",
+					tone: 'confrontational',
+					triggers: ['media-advantage-follow-up']
+				},
+				{
+					text: "Good governance speaks louder than media noise. Results will eventually overcome narratives.",
+					tone: 'diplomatic',
+					triggers: ['results-over-noise-follow-up']
+				},
+				{
+					text: "I've survived media attacks before. Experience teaches you to focus on voters, not journalists.",
+					tone: 'aggressive',
+					triggers: ['media-survival-follow-up']
+				},
+				{
+					text: "Every leader faces media scrutiny. The question is whether you let it paralyze you or drive better performance.",
+					tone: 'defensive',
+					triggers: ['scrutiny-motivation-follow-up']
+				}
+			]
+		},
+
+		// Multi-scenario: Voter skepticism challenge
+		{
+			id: 'scenario-voter-cynicism',
+			type: 'closing',
+			conditions: {
+				scenario: ['party-rehabilitator', 'scandal-survivor', 'emergency-replacement', 'coalition-defector', 'hostile-takeover']
+			},
+			scenario: "Dutch voters are increasingly cynical about politics. Your controversial path into leadership might reinforce their belief that politics is just about power, not principle.",
+			question: "Aren't you part of the problem? Your path to leadership - scandal, betrayal, internal warfare - this is exactly why voters hate politics. How do you restore faith when you represent what's wrong?",
+			options: [
+				{
+					text: "Real change requires people willing to challenge the system from within, even at personal cost.",
+					tone: 'confrontational',
+					triggers: ['system-challenge-follow-up']
+				},
+				{
+					text: "I understand their cynicism because I've seen how politics really works. That's why I can fix it.",
+					tone: 'diplomatic',
+					triggers: ['insider-knowledge-follow-up']
+				},
+				{
+					text: "Voters are smart. They can distinguish between fighting for principle and fighting for power.",
+					tone: 'defensive',
+					triggers: ['voter-intelligence-follow-up']
+				},
+				{
+					text: "The system is already broken. At least I'm honest about the fight instead of pretending everything is fine.",
+					tone: 'aggressive',
+					triggers: ['honest-fighter-follow-up']
+				}
+			]
 		}
 	];
+
+	// Response option templates (Task 6.1)
+	const responseTemplates = {
+		aggressive: [
+			"That's completely wrong and anyone who believes that is naive.",
+			"I'm not going to apologize for having strong positions on important issues.",
+			"The media keeps pushing this narrative because they can't handle the truth.",
+			"Other politicians are too cowardly to say what everyone is thinking.",
+			"This question ignores the real issue that everyone else is avoiding."
+		],
+		defensive: [
+			"That's a mischaracterization of my position and you know it.",
+			"I'm being targeted unfairly while real problems get ignored.",
+			"My record speaks for itself, despite what critics say.",
+			"That's taken out of context and doesn't reflect the full situation.",
+			"I've always been consistent on this issue if you look at the facts."
+		],
+		deflection: [
+			"The real question is why we're focusing on this instead of what matters to voters.",
+			"I think we should be discussing solutions, not playing political games.",
+			"That's exactly the kind of insider politics that Dutch people are tired of.",
+			"Let me address the underlying issue that's actually important here.",
+			"I prefer to focus on results rather than political theater."
+		],
+		diplomatic: [
+			"I understand the concerns on both sides and believe we can find common ground.",
+			"This is a complex issue that requires careful consideration of all perspectives.",
+			"I'm committed to working with anyone who wants to solve this problem.",
+			"There are valid points in that criticism that I take seriously.",
+			"I believe in bringing people together rather than driving them apart."
+		],
+		confrontational: [
+			"That question reveals more about your bias than about the actual issue.",
+			"I'm not going to let you frame this discussion around false premises.",
+			"Let's be honest about what's really happening here instead of playing games.",
+			"You're asking the wrong question and I think you know it.",
+			"I'll challenge anyone who tries to distort my record for political gain."
+		],
+		evasive: [
+			"That's a very complex issue with many different aspects to consider.",
+			"I think the voters will ultimately decide what matters most to them.",
+			"There are many factors that need to be taken into account here.",
+			"I'm still reviewing all the information before making any final decisions.",
+			"The situation is still evolving and I want to be careful about premature judgments."
+		]
+	};
+
+	// Function to get template response for a given tone
+	function getResponseTemplate(tone: string, context?: string): string {
+		const templates = responseTemplates[tone as keyof typeof responseTemplates] || responseTemplates.diplomatic;
+		const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
+		return randomTemplate;
+	}
+
+	// Function to create standardized response options for any question
+	function createStandardResponseOptions(questionContext: string, includeAllTones: boolean = false) {
+		const standardTones = ['aggressive', 'defensive', 'diplomatic', 'confrontational'];
+		if (includeAllTones) {
+			standardTones.push('evasive', 'deflection');
+		}
+
+		return standardTones.map(tone => ({
+			text: getResponseTemplate(tone, questionContext),
+			tone: tone,
+			triggers: [`${tone}-standard-follow-up`]
+		}));
+	}
+
+	// Consequence preview system (Task 6.5)
+	function getResponseConsequences(option: { text: string; position?: number; priority?: number; tone: string; triggers?: string[] }) {
+		const consequences = [];
+
+		// Tone-based consequences
+		switch (option.tone) {
+			case 'aggressive':
+				consequences.push({
+					type: 'interviewer_mood',
+					effect: 'Interviewer becomes more hostile',
+					icon: '🔥',
+					severity: 'high'
+				});
+				consequences.push({
+					type: 'authenticity',
+					effect: '-5 to -10 authenticity',
+					icon: '📉',
+					severity: 'medium'
+				});
+				consequences.push({
+					type: 'confidence',
+					effect: '+5 to +8 confidence',
+					icon: '📈',
+					severity: 'positive'
+				});
+				break;
+
+			case 'defensive':
+				consequences.push({
+					type: 'confidence',
+					effect: '-3 confidence',
+					icon: '📉',
+					severity: 'medium'
+				});
+				consequences.push({
+					type: 'authenticity',
+					effect: '+2 authenticity',
+					icon: '📈',
+					severity: 'low'
+				});
+				break;
+
+			case 'evasive':
+				consequences.push({
+					type: 'interviewer_mood',
+					effect: 'Interviewer becomes more persistent',
+					icon: '🤨',
+					severity: 'medium'
+				});
+				consequences.push({
+					type: 'authenticity',
+					effect: '-8 to -10 authenticity',
+					icon: '📉',
+					severity: 'high'
+				});
+				consequences.push({
+					type: 'consistency',
+					effect: '-5 consistency',
+					icon: '📉',
+					severity: 'medium'
+				});
+				break;
+
+			case 'diplomatic':
+				consequences.push({
+					type: 'authenticity',
+					effect: '+5 to +8 authenticity',
+					icon: '📈',
+					severity: 'positive'
+				});
+				consequences.push({
+					type: 'interviewer_mood',
+					effect: 'May calm hostile interviewer',
+					icon: '😊',
+					severity: 'positive'
+				});
+				break;
+
+			case 'confrontational':
+				consequences.push({
+					type: 'interviewer_mood',
+					effect: 'Escalates tension significantly',
+					icon: '⚡',
+					severity: 'high'
+				});
+				consequences.push({
+					type: 'confidence',
+					effect: '+10 confidence',
+					icon: '📈',
+					severity: 'positive'
+				});
+				consequences.push({
+					type: 'authenticity',
+					effect: '+5 authenticity',
+					icon: '📈',
+					severity: 'positive'
+				});
+				break;
+		}
+
+		// Position-based consequences
+		if (option.position !== undefined) {
+			if (Math.abs(option.position) > 50) {
+				consequences.push({
+					type: 'polarization',
+					effect: 'Strong position may alienate moderate voters',
+					icon: '⚠️',
+					severity: 'medium'
+				});
+			}
+
+			// Check for consistency with existing positions
+			const existingPosition = positions.find(p => p.position !== undefined);
+			if (existingPosition && Math.abs(option.position - existingPosition.position) > 40) {
+				consequences.push({
+					type: 'consistency',
+					effect: 'May trigger contradiction follow-up',
+					icon: '🔄',
+					severity: 'high'
+				});
+			}
+		}
+
+		// Background-specific consequences
+		const backgroundId = selectedBackground?.id;
+		if (backgroundId === 'whistleblower' && option.tone === 'evasive') {
+			consequences.push({
+				type: 'credibility',
+				effect: 'Evasiveness contradicts whistleblower image',
+				icon: '⚠️',
+				severity: 'high'
+			});
+		}
+
+		if (backgroundId === 'business-leader' && option.tone === 'aggressive') {
+			consequences.push({
+				type: 'professionalism',
+				effect: 'Aggressive tone may hurt business credibility',
+				icon: '💼',
+				severity: 'medium'
+			});
+		}
+
+		// Scenario-specific consequences
+		const scenarioId = selectedScenario?.id;
+		if (scenarioId === 'scandal-survivor' && option.tone === 'evasive') {
+			consequences.push({
+				type: 'redemption',
+				effect: 'Evasiveness undermines redemption narrative',
+				icon: '📉',
+				severity: 'high'
+			});
+		}
+
+		return consequences;
+	}
+
+	// Show consequence preview for hovered option
+	let hoveredOption: any = null;
+	let hoveredConsequences: any[] = [];
+
+	function showConsequencePreview(option: any) {
+		hoveredOption = option;
+		hoveredConsequences = getResponseConsequences(option);
+	}
+
+	function hideConsequencePreview() {
+		hoveredOption = null;
+		hoveredConsequences = [];
+	}
+
+	// Dynamic contradiction follow-up questions (Task 5.4)
+	function generateContradictionFollowUp(contradictionType: string, questionId: string, previousResponse: string, currentResponse: string): InterviewQuestion {
+		const baseId = `contradiction-${contradictionType}-${Date.now()}`;
+
+		switch (contradictionType) {
+			case 'position-flip':
+				return {
+					id: baseId,
+					type: 'consistency-check',
+					scenario: `Let me challenge you on something. Earlier in this interview, you took a very different position on this same issue.`,
+					question: `You just said "${currentResponse.substring(0, 100)}..." but moments ago you argued "${previousResponse.substring(0, 100)}..." Which one do you actually believe?`,
+					options: [
+						{
+							text: "Both responses reflect different aspects of a complex issue that can't be reduced to simple positions.",
+							tone: 'diplomatic',
+							triggers: ['complexity-defense-follow-up']
+						},
+						{
+							text: "I was exploring different angles to find the best solution. That's called thinking through problems.",
+							tone: 'defensive',
+							triggers: ['exploration-follow-up']
+						},
+						{
+							text: "You're trying to create a 'gotcha' moment where none exists. Real leadership means adapting to new information.",
+							tone: 'aggressive',
+							triggers: ['gotcha-pushback-follow-up']
+						},
+						{
+							text: "Let me clarify my position - I support a balanced approach that considers multiple factors.",
+							tone: 'evasive',
+							triggers: ['clarification-follow-up']
+						},
+						{
+							text: "You caught an inconsistency. Let me be direct about what I actually believe on this issue.",
+							tone: 'confrontational',
+							triggers: ['honesty-follow-up']
+						}
+					]
+				};
+
+			case 'issue-contradiction':
+				return {
+					id: baseId,
+					type: 'consistency-check',
+					scenario: `I notice you're taking contradictory positions on related issues that most political observers see as logically connected.`,
+					question: `How can you simultaneously support both of these positions when they work against each other in practice?`,
+					options: [
+						{
+							text: "Political issues are more complex than simple either/or choices. Nuance isn't contradiction.",
+							tone: 'diplomatic',
+							triggers: ['nuance-defense-follow-up']
+						},
+						{
+							text: "Those aren't contradictory if you understand the details of implementation and timing.",
+							tone: 'defensive',
+							triggers: ['implementation-follow-up']
+						},
+						{
+							text: "Real leadership means refusing to be trapped by false dilemmas and finding third options.",
+							tone: 'confrontational',
+							triggers: ['third-option-follow-up']
+						},
+						{
+							text: "I prioritize outcomes over ideological consistency. What matters is what works for Dutch families.",
+							tone: 'aggressive',
+							triggers: ['outcomes-over-ideology-follow-up']
+						}
+					]
+				};
+
+			case 'background-betrayal':
+				return {
+					id: baseId,
+					type: 'consistency-check',
+					scenario: `Your current position directly contradicts everything your background and experience should have taught you.`,
+					question: `Given your background, how can you take a position that goes against everything you claimed to stand for in your previous career?`,
+					options: [
+						{
+							text: "Experience taught me that my old assumptions were wrong. I changed my mind based on evidence.",
+							tone: 'diplomatic',
+							triggers: ['evidence-change-follow-up']
+						},
+						{
+							text: "People grow and evolve. Rigid adherence to past positions prevents learning and progress.",
+							tone: 'defensive',
+							triggers: ['growth-follow-up']
+						},
+						{
+							text: "My background gives me unique insight into why that approach fails. I'm not betraying anything.",
+							tone: 'confrontational',
+							triggers: ['insider-insight-follow-up']
+						},
+						{
+							text: "Politics requires adapting to new circumstances. What worked in my old job doesn't work in politics.",
+							tone: 'evasive',
+							triggers: ['adaptation-follow-up']
+						}
+					]
+				};
+
+			case 'tone-pattern':
+				return {
+					id: baseId,
+					type: 'consistency-check',
+					scenario: `Your tone and approach keep shifting dramatically throughout this interview - diplomatic one moment, aggressive the next.`,
+					question: `Voters need to know who you really are. Are you the reasonable diplomat or the aggressive fighter? You can't be both.`,
+					options: [
+						{
+							text: "Effective leadership requires different approaches for different challenges. Flexibility isn't weakness.",
+							tone: 'diplomatic',
+							triggers: ['flexible-leadership-follow-up']
+						},
+						{
+							text: "I'm showing you I can be both collaborative and tough depending on what the situation demands.",
+							tone: 'confrontational',
+							triggers: ['situational-leadership-follow-up']
+						},
+						{
+							text: "You're trying to box me into a simple category. Real people are more complex than your labels.",
+							tone: 'aggressive',
+							triggers: ['complexity-defense-follow-up']
+						},
+						{
+							text: "I believe in meeting people where they are and matching the tone that gets results.",
+							tone: 'defensive',
+							triggers: ['matching-tone-follow-up']
+						}
+					]
+				};
+
+			default:
+				return {
+					id: baseId,
+					type: 'consistency-check',
+					scenario: `I need to challenge you on something that doesn't add up in your responses.`,
+					question: `Can you explain the contradiction I'm seeing in your positions?`,
+					options: [
+						{
+							text: "I don't see a contradiction. Can you be more specific about what you think doesn't add up?",
+							tone: 'defensive',
+							triggers: ['specificity-request-follow-up']
+						},
+						{
+							text: "Complex issues require complex answers. Simple consistency can be simplistic thinking.",
+							tone: 'diplomatic',
+							triggers: ['complexity-defense-follow-up']
+						},
+						{
+							text: "If there's an inconsistency, it's because I'm still thinking through the implications.",
+							tone: 'evasive',
+							triggers: ['thinking-process-follow-up']
+						}
+					]
+				};
+		}
+	}
+
+	// Enhanced question selection with contradiction detection
+	function selectNextQuestionWithContradictionCheck(): string | null {
+		// First check if we detected any contradictions in the last response
+		const lastQuestionId = currentQuestionId;
+		const contradictionKeys = Object.keys(contradictions);
+
+		if (contradictionKeys.length > 0 && Math.random() > 0.3) { // 70% chance to follow up on contradiction
+			const latestContradiction = contradictionKeys[contradictionKeys.length - 1];
+
+			// Determine contradiction type
+			let contradictionType = 'general';
+			if (latestContradiction.includes('-flip')) {
+				contradictionType = 'position-flip';
+			} else if (latestContradiction.includes('background')) {
+				contradictionType = 'background-betrayal';
+			} else if (responseTones.length >= 2) {
+				const lastTwoTones = responseTones.slice(-2);
+				if (lastTwoTones[0] !== lastTwoTones[1] &&
+					['aggressive', 'diplomatic'].includes(lastTwoTones[0]) &&
+					['aggressive', 'diplomatic'].includes(lastTwoTones[1])) {
+					contradictionType = 'tone-pattern';
+				} else {
+					contradictionType = 'issue-contradiction';
+				}
+			}
+
+			// Generate dynamic follow-up question
+			const previousResponse = selectedAnswers.length >= 2 ? selectedAnswers[selectedAnswers.length - 2].text : '';
+			const currentResponse = selectedAnswers.length >= 1 ? selectedAnswers[selectedAnswers.length - 1].text : '';
+
+			const contradictionQuestion = generateContradictionFollowUp(
+				contradictionType,
+				lastQuestionId!,
+				previousResponse,
+				currentResponse
+			);
+
+			// Temporarily add to question database for this interview
+			questionDatabase.push(contradictionQuestion);
+
+			return contradictionQuestion.id;
+		}
+
+		// If no contradictions or we choose not to follow up, use normal selection logic
+		return selectNextQuestion();
+	}
 
 	// Calculate final positions based on answers
 	function calculatePositions(answers: Array<{issueId: string, position: number, priority: number}>) {
@@ -1249,8 +2590,8 @@
 		// Check for triggers and update mood if needed
 		updateInterviewerMood(option.tone);
 
-		// Move to next question
-		const nextQuestionId = selectNextQuestion();
+		// Move to next question (check for contradictions first)
+		const nextQuestionId = selectNextQuestionWithContradictionCheck();
 		if (nextQuestionId) {
 			currentQuestionId = nextQuestionId;
 		} else {
@@ -1751,6 +3092,8 @@
 						<button
 							class="response-option tone-{option.tone}"
 							on:click={() => selectAnswer(option)}
+							on:mouseenter={() => showConsequencePreview(option)}
+							on:mouseleave={hideConsequencePreview}
 						>
 							<span class="option-letter">{String.fromCharCode(65 + index)}</span>
 							<div class="option-content">
@@ -1766,6 +3109,21 @@
 							</div>
 						</button>
 					{/each}
+
+					<!-- Consequence Preview Panel -->
+					{#if hoveredConsequences.length > 0}
+						<div class="consequence-preview">
+							<h5>📊 Potential Consequences:</h5>
+							<div class="consequence-list">
+								{#each hoveredConsequences as consequence}
+									<div class="consequence-item severity-{consequence.severity}">
+										<span class="consequence-icon">{consequence.icon}</span>
+										<span class="consequence-text">{consequence.effect}</span>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
 				</div>
 			</div>
 			{:else}
@@ -2609,5 +3967,101 @@
 		color: rgba(255, 255, 255, 0.8);
 		margin: 0;
 		line-height: 1.4;
+	}
+
+	/* Consequence Preview Styles (Task 6.5) */
+	.consequence-preview {
+		background: linear-gradient(135deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.9) 100%);
+		border: 1px solid rgba(0, 170, 255, 0.3);
+		border-radius: 10px;
+		padding: 15px;
+		margin-top: 15px;
+		backdrop-filter: blur(10px);
+		animation: fadeInUp 0.3s ease-out;
+	}
+
+	.consequence-preview h5 {
+		color: #00aaff;
+		margin: 0 0 10px 0;
+		font-size: 1em;
+		font-weight: 600;
+	}
+
+	.consequence-list {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.consequence-item {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 8px 12px;
+		border-radius: 6px;
+		font-size: 0.9em;
+		transition: all 0.2s ease;
+	}
+
+	.consequence-item.severity-high {
+		background: rgba(239, 68, 68, 0.15);
+		border-left: 3px solid #ef4444;
+		color: #ffffff;
+	}
+
+	.consequence-item.severity-medium {
+		background: rgba(251, 191, 36, 0.15);
+		border-left: 3px solid #fbbf24;
+		color: #ffffff;
+	}
+
+	.consequence-item.severity-low {
+		background: rgba(156, 163, 175, 0.15);
+		border-left: 3px solid #9ca3af;
+		color: #ffffff;
+	}
+
+	.consequence-item.severity-positive {
+		background: rgba(34, 197, 94, 0.15);
+		border-left: 3px solid #22c55e;
+		color: #ffffff;
+	}
+
+	.consequence-icon {
+		font-size: 1.1em;
+		flex-shrink: 0;
+	}
+
+	.consequence-text {
+		flex: 1;
+		line-height: 1.3;
+	}
+
+	@keyframes fadeInUp {
+		from {
+			opacity: 0;
+			transform: translateY(10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	/* Responsive adjustments for consequence preview */
+	@media (max-width: 768px) {
+		.consequence-preview {
+			padding: 12px;
+			margin-top: 10px;
+		}
+
+		.consequence-item {
+			padding: 6px 10px;
+			font-size: 0.85em;
+		}
+
+		.consequence-preview h5 {
+			font-size: 0.9em;
+		}
 	}
 </style>

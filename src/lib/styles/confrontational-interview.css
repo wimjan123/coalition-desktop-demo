@@ -1,0 +1,629 @@
+/**
+ * Confrontational Interview CSS Theme System
+ * Comprehensive styling for high-pressure political interviews
+ */
+
+/* ========================================
+   BASE CONFRONTATIONAL STYLES
+   ======================================== */
+
+.confrontational-background {
+	transition: all 0.8s ease-in-out;
+	position: relative;
+	overflow: hidden;
+}
+
+.confrontational-background::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: var(--intensity-overlay, rgba(0,0,0,0));
+	z-index: 1;
+	transition: background 0.5s ease-in-out;
+}
+
+.confrontational-background.camera-shake {
+	animation: camera-shake 0.8s ease-in-out infinite;
+}
+
+.confrontational-background.pressure-filter {
+	filter: var(--pressure-filter, none);
+}
+
+/* ========================================
+   INTERVIEWER VISUAL STYLES
+   ======================================== */
+
+.confrontational-interviewer {
+	transition: all 0.6s ease-in-out;
+	transform-origin: center center;
+}
+
+.confrontational-interviewer.position-centered {
+	transform: translateX(0) scale(1);
+}
+
+.confrontational-interviewer.position-off-center {
+	transform: translateX(-10px) scale(1.02);
+}
+
+.confrontational-interviewer.position-leaning-forward {
+	transform: translateX(-5px) translateY(-3px) scale(1.05) rotateX(2deg);
+}
+
+.confrontational-interviewer.expression-subtle {
+	filter: brightness(98%) contrast(102%);
+}
+
+.confrontational-interviewer.expression-moderate {
+	filter: brightness(95%) contrast(115%) saturate(105%);
+}
+
+.confrontational-interviewer.expression-intense {
+	filter: brightness(90%) contrast(135%) saturate(115%) hue-rotate(10deg);
+}
+
+.confrontational-interviewer.eye-contact-normal {
+	/* Default eye contact styling */
+}
+
+.confrontational-interviewer.eye-contact-intense {
+	filter: brightness(92%) contrast(125%);
+	animation: intense-gaze 3s ease-in-out infinite;
+}
+
+.confrontational-interviewer.eye-contact-piercing {
+	filter: brightness(88%) contrast(145%) saturate(120%);
+	animation: piercing-stare 2.5s ease-in-out infinite;
+}
+
+.confrontational-interviewer.body-language-professional {
+	/* Default professional posture */
+}
+
+.confrontational-interviewer.body-language-aggressive {
+	transform: scale(1.03) rotateX(1deg);
+	animation: aggressive-posture 4s ease-in-out infinite;
+}
+
+.confrontational-interviewer.body-language-intimidating {
+	transform: scale(1.05) rotateX(2deg) translateY(-2px);
+	animation: intimidating-presence 3.5s ease-in-out infinite;
+}
+
+/* ========================================
+   QUESTION BOX STYLES
+   ======================================== */
+
+.confrontational-question-box {
+	transition: all 0.4s ease-in-out;
+	position: relative;
+	overflow: hidden;
+}
+
+.confrontational-question-box.border-subtle {
+	border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.confrontational-question-box.border-prominent {
+	border: 2px solid rgba(239, 68, 68, 0.6);
+	box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+}
+
+.confrontational-question-box.border-aggressive {
+	border: 3px solid rgba(220, 38, 38, 0.8);
+	box-shadow:
+		0 0 15px rgba(220, 38, 38, 0.4),
+		inset 0 0 20px rgba(220, 38, 38, 0.1);
+}
+
+.confrontational-question-box.text-normal {
+	font-weight: 400;
+}
+
+.confrontational-question-box.text-bold {
+	font-weight: 700;
+}
+
+.confrontational-question-box.text-extra-bold {
+	font-weight: 900;
+	letter-spacing: 0.025em;
+}
+
+.confrontational-question-box.shadow-none {
+	box-shadow: none;
+}
+
+.confrontational-question-box.shadow-subtle {
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.confrontational-question-box.shadow-dramatic {
+	box-shadow:
+		0 8px 16px rgba(0, 0, 0, 0.4),
+		0 0 30px rgba(239, 68, 68, 0.2);
+}
+
+.confrontational-question-box.color-neutral {
+	background: rgba(31, 41, 55, 0.9);
+	color: #ffffff;
+}
+
+.confrontational-question-box.color-warning {
+	background: rgba(251, 146, 60, 0.15);
+	color: #fbbf24;
+	border-color: #f59e0b;
+}
+
+.confrontational-question-box.color-critical {
+	background: rgba(220, 38, 38, 0.2);
+	color: #fecaca;
+	border-color: #dc2626;
+}
+
+.confrontational-question-box.pulsing {
+	animation: question-pulse 2s ease-in-out infinite;
+}
+
+/* ========================================
+   RESPONSE OPTION STYLES
+   ======================================== */
+
+.confrontational-response-options {
+	position: relative;
+}
+
+.confrontational-response-options.pressure-indicators .response-option::before {
+	content: '';
+	position: absolute;
+	left: -4px;
+	top: 0;
+	bottom: 0;
+	width: 3px;
+	background: linear-gradient(to bottom, #ef4444, #dc2626);
+	opacity: 0;
+	transition: opacity 0.3s ease-in-out;
+}
+
+.confrontational-response-options.pressure-indicators .response-option:hover::before {
+	opacity: 1;
+}
+
+.confrontational-response-options.consequence-preview .response-option {
+	position: relative;
+	overflow: visible;
+}
+
+.confrontational-response-options.consequence-preview .response-option::after {
+	content: attr(data-consequence);
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
+	background: rgba(220, 38, 38, 0.9);
+	color: white;
+	padding: 0.5rem;
+	font-size: 0.75rem;
+	opacity: 0;
+	transform: translateY(-10px);
+	transition: all 0.3s ease-in-out;
+	pointer-events: none;
+	z-index: 10;
+	border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.confrontational-response-options.consequence-preview .response-option:hover::after {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.confrontational-response-options.difficulty-visualization .response-option {
+	border-left: 4px solid transparent;
+}
+
+.confrontational-response-options.difficulty-visualization .response-option[data-difficulty="low"] {
+	border-left-color: #10b981;
+}
+
+.confrontational-response-options.difficulty-visualization .response-option[data-difficulty="medium"] {
+	border-left-color: #f59e0b;
+}
+
+.confrontational-response-options.difficulty-visualization .response-option[data-difficulty="high"] {
+	border-left-color: #ef4444;
+}
+
+.confrontational-response-options.difficulty-visualization .response-option[data-difficulty="extreme"] {
+	border-left-color: #dc2626;
+	animation: extreme-difficulty-pulse 1.5s ease-in-out infinite;
+}
+
+.confrontational-response-options.time-constraint-emphasis .response-option {
+	position: relative;
+}
+
+.confrontational-response-options.time-constraint-emphasis .response-option.urgent {
+	background: linear-gradient(45deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+	border-color: #ef4444;
+	animation: urgent-response-flash 1s ease-in-out infinite;
+}
+
+.confrontational-response-options.risk-highlighting .response-option[data-risk="high"] {
+	box-shadow:
+		0 0 10px rgba(239, 68, 68, 0.3),
+		inset 0 0 10px rgba(239, 68, 68, 0.1);
+}
+
+.confrontational-response-options.risk-highlighting .response-option[data-risk="extreme"] {
+	box-shadow:
+		0 0 15px rgba(220, 38, 38, 0.5),
+		inset 0 0 15px rgba(220, 38, 38, 0.2);
+	animation: extreme-risk-warning 2s ease-in-out infinite;
+}
+
+/* ========================================
+   OVERLAY EFFECTS
+   ======================================== */
+
+.confrontational-overlays {
+	position: relative;
+}
+
+.confrontational-overlays.tension-flashes::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: radial-gradient(circle at center, rgba(239, 68, 68, 0.1), transparent);
+	opacity: 0;
+	animation: tension-flash 3s ease-in-out infinite;
+	pointer-events: none;
+	z-index: 5;
+}
+
+.confrontational-overlays.confrontation-borders {
+	border: 2px solid transparent;
+	background: linear-gradient(45deg, rgba(239, 68, 68, 0.8), rgba(220, 38, 38, 0.8)) border-box;
+	background-clip: border-box;
+	animation: confrontation-border-glow 2.5s ease-in-out infinite;
+}
+
+.confrontational-overlays.pressure-gradients::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(
+		180deg,
+		transparent 0%,
+		rgba(239, 68, 68, 0.05) 30%,
+		rgba(239, 68, 68, 0.1) 70%,
+		rgba(220, 38, 38, 0.15) 100%
+	);
+	pointer-events: none;
+	z-index: 2;
+}
+
+.confrontational-overlays.intimidation-shadows {
+	box-shadow:
+		0 20px 40px rgba(0, 0, 0, 0.6),
+		inset 0 -10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.confrontational-overlays.spotlight-effects::before {
+	content: '';
+	position: absolute;
+	top: -50%;
+	left: -50%;
+	right: -50%;
+	bottom: -50%;
+	background: radial-gradient(
+		ellipse at center,
+		transparent 30%,
+		rgba(0, 0, 0, 0.3) 60%,
+		rgba(0, 0, 0, 0.7) 100%
+	);
+	pointer-events: none;
+	z-index: 3;
+	animation: spotlight-shift 8s ease-in-out infinite;
+}
+
+/* ========================================
+   STATUS INDICATORS
+   ======================================== */
+
+.confrontational-indicators {
+	position: relative;
+}
+
+.confrontational-indicators.hostility-meter::before {
+	content: '⚡ HOSTILITY';
+	position: absolute;
+	top: 1rem;
+	right: 1rem;
+	background: rgba(220, 38, 38, 0.9);
+	color: white;
+	padding: 0.25rem 0.5rem;
+	border-radius: 0.25rem;
+	font-size: 0.75rem;
+	font-weight: bold;
+	z-index: 10;
+	animation: hostility-indicator-pulse 1.5s ease-in-out infinite;
+}
+
+.confrontational-indicators.pressure-gauge::after {
+	content: '🔥 PRESSURE';
+	position: absolute;
+	top: 3.5rem;
+	right: 1rem;
+	background: rgba(251, 146, 60, 0.9);
+	color: white;
+	padding: 0.25rem 0.5rem;
+	border-radius: 0.25rem;
+	font-size: 0.75rem;
+	font-weight: bold;
+	z-index: 10;
+}
+
+.confrontational-indicators.vulnerability-indicator .vulnerability-marker {
+	position: absolute;
+	background: rgba(239, 68, 68, 0.8);
+	color: white;
+	padding: 0.125rem 0.25rem;
+	border-radius: 0.125rem;
+	font-size: 0.625rem;
+	font-weight: bold;
+	animation: vulnerability-pulse 1s ease-in-out infinite;
+	z-index: 15;
+}
+
+.confrontational-indicators.credibility-tracker .credibility-bar {
+	position: absolute;
+	bottom: 1rem;
+	left: 1rem;
+	width: 100px;
+	height: 4px;
+	background: rgba(0, 0, 0, 0.3);
+	border-radius: 2px;
+	overflow: hidden;
+	z-index: 10;
+}
+
+.confrontational-indicators.credibility-tracker .credibility-fill {
+	height: 100%;
+	background: linear-gradient(to right, #dc2626, #f59e0b, #10b981);
+	transition: width 0.5s ease-in-out;
+	border-radius: 2px;
+}
+
+.confrontational-indicators.momentum-shifts .momentum-arrow {
+	position: absolute;
+	top: 50%;
+	right: 2rem;
+	transform: translateY(-50%);
+	font-size: 1.5rem;
+	animation: momentum-shift 2s ease-in-out infinite;
+	z-index: 10;
+}
+
+/* ========================================
+   INTENSITY LEVEL MODIFIERS
+   ======================================== */
+
+.high-intensity {
+	filter: brightness(90%) contrast(130%) saturate(115%);
+	animation-duration: 0.8s;
+}
+
+.medium-intensity {
+	filter: brightness(95%) contrast(115%) saturate(105%);
+}
+
+.high-intensity .confrontational-question-box {
+	border-width: 3px;
+	box-shadow:
+		0 0 20px rgba(239, 68, 68, 0.4),
+		inset 0 0 10px rgba(239, 68, 68, 0.1);
+}
+
+.high-intensity .confrontational-interviewer {
+	animation-duration: 0.6s;
+	filter: brightness(85%) contrast(140%) saturate(125%) hue-rotate(15deg);
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+
+@keyframes camera-shake {
+	0%, 100% { transform: translateX(0) translateY(0); }
+	10% { transform: translateX(-1px) translateY(-1px); }
+	20% { transform: translateX(1px) translateY(-1px); }
+	30% { transform: translateX(-1px) translateY(1px); }
+	40% { transform: translateX(1px) translateY(1px); }
+	50% { transform: translateX(-1px) translateY(-1px); }
+	60% { transform: translateX(1px) translateY(-1px); }
+	70% { transform: translateX(-1px) translateY(1px); }
+	80% { transform: translateX(1px) translateY(1px); }
+	90% { transform: translateX(-1px) translateY(-1px); }
+}
+
+@keyframes intense-gaze {
+	0%, 100% { filter: brightness(92%) contrast(125%); }
+	50% { filter: brightness(88%) contrast(135%) saturate(110%); }
+}
+
+@keyframes piercing-stare {
+	0%, 100% { filter: brightness(88%) contrast(145%) saturate(120%); }
+	50% { filter: brightness(85%) contrast(155%) saturate(130%) hue-rotate(5deg); }
+}
+
+@keyframes aggressive-posture {
+	0%, 100% { transform: scale(1.03) rotateX(1deg); }
+	50% { transform: scale(1.05) rotateX(2deg) translateY(-1px); }
+}
+
+@keyframes intimidating-presence {
+	0%, 100% { transform: scale(1.05) rotateX(2deg) translateY(-2px); }
+	50% { transform: scale(1.07) rotateX(3deg) translateY(-3px); }
+}
+
+@keyframes question-pulse {
+	0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
+	50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.6), 0 0 30px rgba(239, 68, 68, 0.2); }
+}
+
+@keyframes extreme-difficulty-pulse {
+	0%, 100% { border-left-color: #dc2626; box-shadow: none; }
+	50% { border-left-color: #ef4444; box-shadow: -4px 0 8px rgba(220, 38, 38, 0.3); }
+}
+
+@keyframes urgent-response-flash {
+	0%, 100% { background: linear-gradient(45deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05)); }
+	50% { background: linear-gradient(45deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1)); }
+}
+
+@keyframes extreme-risk-warning {
+	0%, 100% {
+		box-shadow: 0 0 15px rgba(220, 38, 38, 0.5), inset 0 0 15px rgba(220, 38, 38, 0.2);
+	}
+	50% {
+		box-shadow: 0 0 25px rgba(220, 38, 38, 0.8), inset 0 0 25px rgba(220, 38, 38, 0.3);
+	}
+}
+
+@keyframes tension-flash {
+	0%, 90%, 100% { opacity: 0; }
+	5%, 85% { opacity: 1; }
+}
+
+@keyframes confrontation-border-glow {
+	0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
+	50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.6), 0 0 30px rgba(220, 38, 38, 0.2); }
+}
+
+@keyframes spotlight-shift {
+	0%, 100% { transform: translateX(0) translateY(0); }
+	25% { transform: translateX(10px) translateY(-5px); }
+	50% { transform: translateX(-5px) translateY(10px); }
+	75% { transform: translateX(-10px) translateY(-10px); }
+}
+
+@keyframes hostility-indicator-pulse {
+	0%, 100% { opacity: 1; transform: scale(1); }
+	50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+@keyframes vulnerability-pulse {
+	0%, 100% { opacity: 1; transform: scale(1); }
+	50% { opacity: 0.8; transform: scale(1.2); }
+}
+
+@keyframes momentum-shift {
+	0%, 100% { transform: translateY(-50%) translateX(0); }
+	50% { transform: translateY(-50%) translateX(5px); }
+}
+
+/* ========================================
+   THEME-SPECIFIC ANIMATIONS
+   ======================================== */
+
+.fadeInUp {
+	animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+	0% { opacity: 0; transform: translateY(20px); }
+	100% { opacity: 1; transform: translateY(0); }
+}
+
+.dramatic-slide-in {
+	animation: dramaticSlideIn 0.8s ease-out;
+}
+
+@keyframes dramaticSlideIn {
+	0% { opacity: 0; transform: translateX(-30px) scale(0.95); }
+	100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+.explosive-entrance {
+	animation: explosiveEntrance 1s ease-out;
+}
+
+@keyframes explosiveEntrance {
+	0% {
+		opacity: 0;
+		transform: scale(0.8) rotateY(-20deg);
+		filter: brightness(150%) contrast(200%);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1.1) rotateY(10deg);
+		filter: brightness(120%) contrast(150%);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1) rotateY(0deg);
+		filter: brightness(100%) contrast(100%);
+	}
+}
+
+.evidence-slide-in {
+	animation: evidenceSlideIn 0.7s ease-out;
+}
+
+@keyframes evidenceSlideIn {
+	0% {
+		opacity: 0;
+		transform: translateX(-20px) skewX(-5deg);
+		filter: hue-rotate(180deg);
+	}
+	100% {
+		opacity: 1;
+		transform: translateX(0) skewX(0deg);
+		filter: hue-rotate(0deg);
+	}
+}
+
+/* ========================================
+   RESPONSIVE ADJUSTMENTS
+   ======================================== */
+
+@media (max-width: 768px) {
+	.confrontational-question-box.border-aggressive {
+		border-width: 2px;
+	}
+
+	.confrontational-interviewer.position-leaning-forward {
+		transform: translateX(-3px) translateY(-2px) scale(1.03) rotateX(1deg);
+	}
+
+	.confrontational-overlays.spotlight-effects::before {
+		top: -30%;
+		left: -30%;
+		right: -30%;
+		bottom: -30%;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.confrontational-background.camera-shake,
+	.confrontational-question-box.pulsing,
+	.confrontational-interviewer,
+	.confrontational-overlays {
+		animation: none !important;
+	}
+
+	.confrontational-background,
+	.confrontational-question-box,
+	.confrontational-interviewer {
+		transition: none !important;
+	}
+}

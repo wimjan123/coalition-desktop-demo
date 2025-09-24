@@ -47,20 +47,20 @@
 - [x] 5.2 Create debate preparation interview system
 - [x] 5.3 Build crisis management interview scenarios
 - [x] 5.4 Implement election campaign interview events
-- [ ] 5.5 Add coalition negotiation interview situations
-- [ ] 5.6 Create policy announcement interview format
-- [ ] 5.7 Build investigative journalism encounter system
-- [ ] 5.8 Add late-campaign pressure interview scenarios
+- [x] 5.5 Add coalition negotiation interview situations
+- [x] 5.6 Create policy announcement interview format
+- [x] 5.7 Build investigative journalism encounter system
+- [x] 5.8 Add late-campaign pressure interview scenarios
 
 ## Phase 6: Visual & Audio Enhancement
-- [ ] 6.1 Design confrontational interview visual theme
-- [ ] 6.2 Create interviewer emotion animation system
-- [ ] 6.3 Add background-specific interview settings/studios
-- [ ] 6.4 Implement dynamic lighting based on interview mood
-- [ ] 6.5 Create sound effects for interruptions and reactions
-- [ ] 6.6 Add news ticker and breaking news visual effects
-- [ ] 6.7 Build social media feed visualization
-- [ ] 6.8 Create newspaper layout generator
+- [x] 6.1 Design confrontational interview visual theme
+- [x] 6.2 Create interviewer emotion animation system
+- [x] 6.3 Add background-specific interview settings/studios
+- [x] 6.4 Implement dynamic lighting based on interview mood
+- [x] 6.5 Create sound effects for interruptions and reactions
+- [x] 6.6 Add news ticker and breaking news visual effects
+- [x] 6.7 Build social media feed visualization
+- [x] 6.8 Create newspaper layout generator
 
 ## Phase 7: Integration & Polish
 - [ ] 7.1 Integrate new interview system with character creation flow
